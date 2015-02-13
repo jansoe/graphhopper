@@ -35,7 +35,7 @@ import java.util.*;
  */
 public class CarFlagEncoder extends AbstractFlagEncoder
 {
-    protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<String, Integer>();
+    protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<String, Integer>();    
     protected final Set<String> badSurfaceSpeedMap = new HashSet<String>();
     /**
      * A map which associates string to speed. Get some impression:
@@ -126,6 +126,12 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         defaultSpeedMap.put("road", 20);
         // forestry stuff
         defaultSpeedMap.put("track", 15);
+        
+        //
+        landuseSpeed.put("residential", 40);
+        landuseSpeed.put("commercial", 40);
+        landuseSpeed.put("retail", 40);
+        landuseSpeed.put("industrial", 40);
     }
 
     /**
@@ -158,6 +164,23 @@ public class CarFlagEncoder extends AbstractFlagEncoder
             }
         }
 
+        return speed;
+    }
+    
+    protected double applyAreaSpeed( double oldSpeed, List<String> landuses )
+    {
+        double speed = oldSpeed;
+        if (landuseSpeed.size() > 0) 
+        {
+            for (String landuse : landuses)
+            {
+                double areaSpeed = landuseSpeed.get(landuse);
+                if (speed > areaSpeed) 
+                {
+                    speed = areaSpeed;
+                }
+            }
+        }
         return speed;
     }
 
@@ -215,7 +238,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags )
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround)
     {
         if (!isAccept(allowed))
             return 0;
@@ -225,6 +248,9 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             // get assumed speed from highway type
             double speed = getSpeed(way);
+            // restrict speed within landuse areas
+            speed = applyAreaSpeed(speed, surround);
+            // apply maxpeed tag
             speed = applyMaxSpeed(way, speed, true);
 
             // limit speed to max 30 km/h if bad surface

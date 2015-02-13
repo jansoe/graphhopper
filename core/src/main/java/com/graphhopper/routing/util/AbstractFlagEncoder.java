@@ -19,6 +19,7 @@ package com.graphhopper.routing.util;
 
 import java.util.HashSet;
 
+import gnu.trove.list.TLongList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,10 +73,13 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     // http://wiki.openstreetmap.org/wiki/Mapfeatures#Barrier
     protected final HashSet<String> absoluteBarriers = new HashSet<String>(5);
     protected final HashSet<String> potentialBarriers = new HashSet<String>(5);
+    
     private boolean blockByDefault = true;
     private boolean blockFords = true;
     protected final int speedBits;
     protected final double speedFactor;
+
+    protected final HashMap<String,Integer> landuseSpeed = new HashMap<String, Integer>(5);
 
     /**
      * @param speedBits specify the number of bits used for speed
@@ -193,7 +197,13 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      * Analyze properties of a way and create the routing flags. This method is called in the second
      * parsing step.
      */
-    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags );
+    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround );
+
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
+    {
+        return handleWayTags(way, allowed, relationFlags, Collections.<String>emptyList());
+    };
+
 
     /**
      * Parse tags on nodes. Node tags can add to speed (like traffic_signals) where the value is
@@ -330,6 +340,11 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
             maxSpeed = backSpeed;
 
         return maxSpeed;
+    }
+    
+    public Set<String> getLanduseTags()
+    {
+        return landuseSpeed.keySet();
     }
 
     @Override
@@ -760,10 +775,11 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         {
             if (force || maxSpeed < speed)
                 return maxSpeed * 0.9;
-        }
+        } 
         return speed;
     }
 
+   
     protected String getPropertiesString()
     {
         return "speedFactor=" + speedFactor + "|speedBits=" + speedBits + "|turnCosts=" + (maxTurnCosts > 0);

@@ -50,6 +50,24 @@ public class LinearKeyAlgo implements KeyAlgo
         setWorldBounds();
     }
 
+    /**
+     * modifies the spatial key to yield the key of the next square in lat-direction
+     * ToDo: if bounding box is exceeded, continues at other end
+     */
+    public long nextLon(long spatialKey, boolean forward)
+    {
+        return forward? spatialKey+1: spatialKey-1;
+    }
+    
+    /**
+     * modifies the spatial key to yield the key of the next square in lon-direction
+     * ToDo: if bounding box is exceeded, continues at other end
+     */
+    public long nextLat(long spatialKey, boolean forward)
+    {
+        return forward? spatialKey+lonUnits: spatialKey-lonUnits;
+    }
+    
     @Override
     public LinearKeyAlgo setBounds( double minLonInit, double maxLonInit, double minLatInit, double maxLatInit )
     {
@@ -64,7 +82,9 @@ public class LinearKeyAlgo implements KeyAlgo
         setBounds(bounds.minLon, bounds.maxLon, bounds.minLat, bounds.maxLat);
         return this;
     }
+    
 
+    
     protected void setWorldBounds()
     {
         setBounds(-180, 180, -90, 90);
@@ -91,6 +111,7 @@ public class LinearKeyAlgo implements KeyAlgo
         long lonIndex = (long) ((lon - bounds.minLon) / lonDelta * C);
         return latIndex * lonUnits + lonIndex;
     }
+    
 
     /**
      * This method returns latitude and longitude via latLon - calculated from specified linearKey
@@ -104,6 +125,14 @@ public class LinearKeyAlgo implements KeyAlgo
         double lon = linearKey % lonUnits * lonDelta + bounds.minLon;
         latLon.lat = lat + latDelta / 2;
         latLon.lon = lon + lonDelta / 2;
+    }
+    
+    public final double roundLat(double lat)
+    {
+        lat = Math.min(Math.max(lat, bounds.minLat), bounds.maxLat);
+        long latIndex = (long) ((lat - bounds.minLat) / latDelta * C);
+        lat = latIndex* latDelta + bounds.minLat + latDelta / 2;
+        return lat;
     }
 
     public double getLatDelta()

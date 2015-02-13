@@ -21,6 +21,7 @@ import com.graphhopper.reader.OSMWay;
 import com.graphhopper.util.BitUtil;
 import static com.graphhopper.routing.util.PriorityCode.*;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * Defines bit layout for motorbikes
@@ -155,7 +156,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags )
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround )
     {
         if (!isAccept(allowed))
             return 0;

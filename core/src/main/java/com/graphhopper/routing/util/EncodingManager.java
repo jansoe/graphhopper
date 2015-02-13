@@ -17,6 +17,7 @@
  */
 package com.graphhopper.routing.util;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -254,14 +255,15 @@ public class EncodingManager
      * directly encoded in 8 bytes.
      * <p/>
      * @param relationFlags The preprocessed relation flags is used to influence the way properties.
+     * @param spatialSurround gives the tags of the surrounding area of the way, and thus can influence way properties
      * @return the encoded flags
      */
-    public long handleWayTags( OSMWay way, long includeWay, long relationFlags )
+    public long handleWayTags( OSMWay way, long includeWay, long relationFlags , List<String> spatialSurround)
     {
         long flags = 0;
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
-            flags |= encoder.handleWayTags(way, includeWay, relationFlags & encoder.getRelBitMask());
+            flags |= encoder.handleWayTags(way, includeWay, relationFlags & encoder.getRelBitMask(), spatialSurround);
         }
 
         return flags;
@@ -445,5 +447,16 @@ public class EncodingManager
         if ("8".equals(properties.get("graph.bytesForFlags")))
             bytesForFlags = 8;
         return new EncodingManager(acceptStr, bytesForFlags);
+    }
+
+    public ArrayList<String> getLanduseTags()
+    {
+        Set landuseTags = new HashSet<String>();
+        for (AbstractFlagEncoder encoder : edgeEncoders)
+        {
+            landuseTags.addAll(encoder.getLanduseTags());
+            
+        }
+        return new ArrayList<String>(landuseTags);
     }
 }

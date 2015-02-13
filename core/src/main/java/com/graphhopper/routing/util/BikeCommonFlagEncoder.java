@@ -301,7 +301,7 @@ public class BikeCommonFlagEncoder extends AbstractFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags )
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround )
     {
         if (!isAccept(allowed))
             return 0;

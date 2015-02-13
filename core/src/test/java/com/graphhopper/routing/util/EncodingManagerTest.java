@@ -133,7 +133,7 @@ public class EncodingManagerTest
         osmRel.setTag("network", "lcn");
         long relFlags = manager.handleRelationTags(osmRel, 0);
         long allow = defaultBike.acceptBit | lessRelationCodes.acceptBit;
-        long flags = manager.handleWayTags(osmWay, allow, relFlags);
+        long flags = manager.handleWayTags(osmWay, allow, relFlags, Collections.<String>emptyList());
 
         assertTrue(defaultBike.getDouble(flags, PriorityWeighting.KEY)
                 > lessRelationCodes.getDouble(flags, PriorityWeighting.KEY));
@@ -157,7 +157,7 @@ public class EncodingManagerTest
         osmRel.setTag("network", "rcn");
         long relFlags = manager.handleRelationTags(osmRel, 0);
         long allow = bikeEncoder.acceptBit | mtbEncoder.acceptBit;
-        long flags = manager.handleWayTags(osmWay, allow, relFlags);
+        long flags = manager.handleWayTags(osmWay, allow, relFlags, Collections.<String>emptyList());
 
         // bike: uninfluenced speed for grade but via network => VERY_NICE                
         // mtb: uninfluenced speed only PREFER
@@ -191,8 +191,13 @@ public class EncodingManagerTest
         osmWay.setTag("highway", "footway");
         osmWay.setTag("name", "test");
 
+<<<<<<< HEAD
         BikeFlagEncoder singleBikeEnc = (BikeFlagEncoder) manager2.getEncoder("bike2");
         long flags = manager2.handleWayTags(osmWay, singleBikeEnc.acceptBit, 0);
+=======
+        BikeFlagEncoder singleBikeEnc = (BikeFlagEncoder) manager2.getSingle();
+        long flags = manager2.handleWayTags(osmWay, singleBikeEnc.acceptBit, 0, Collections.<String>emptyList());
+>>>>>>> Analyze landuse tag, to adapt speed in residential/commercial areas
         double singleSpeed = singleBikeEnc.getSpeed(flags);
         assertEquals(4, singleSpeed, 1e-3);
         assertEquals(singleSpeed, singleBikeEnc.getReverseSpeed(flags), 1e-3);
@@ -202,7 +207,7 @@ public class EncodingManagerTest
         BikeFlagEncoder bike = (BikeFlagEncoder) manager.getEncoder("bike2");
 
         long acceptBits = foot.acceptBit | bike.acceptBit;
-        flags = manager.handleWayTags(osmWay, acceptBits, 0);
+        flags = manager.handleWayTags(osmWay, acceptBits, 0, Collections.<String>emptyList());
         assertEquals(singleSpeed, bike.getSpeed(flags), 1e-2);
         assertEquals(singleSpeed, bike.getReverseSpeed(flags), 1e-2);
 

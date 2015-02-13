@@ -143,6 +143,39 @@ public class BresenhamLine
             }
         }
     }
+    
+    /*
+    *
+     */
+    public static void bresenham2( int y1, int x1, int y2, int x2,
+                                  PointEmitter emitter )
+    {
+        boolean latIncreasing = y1 < y2;
+        boolean lonIncreasing = x1 < x2;
+        int dLat = Math.abs(y2 - y1), sLat = latIncreasing ? 1 : -1;
+        int dLon = Math.abs(x2 - x1), sLon = lonIncreasing ? 1 : -1;
+        int err = dLon - dLat;
+
+        while (true)
+        {
+            emitter.set(y1, x1);
+            if (y1 == y2 && x1 == x2)
+                break;
+
+            int tmpErr = 2 * err;
+            if (tmpErr > -dLat)
+            {
+                err -= dLat;
+                x1 += sLon;
+            }
+
+            if (tmpErr < dLon)
+            {
+                err += dLon;
+                y1 += sLat;
+            }
+        }
+    }
 
     public static void xiaolinWu( double y1, double x1, double y2, double x2,
             PointEmitter emitter )

@@ -66,7 +66,7 @@ import java.util.*;
  * datastructure for the pillar nodes (pillarLats/pillarLons) or, if a tower node, directly into the
  * graphStorage via setLatitude/setLongitude. It can also happen that a pillar node needs to be
  * transformed into a tower node e.g. via barriers or different speed values for one way.
- * <p/>
+ * <p/>aRead
  * 2.b) Reads ways OSM file and creates edges while calculating the speed etc from the OSM tags.
  * When creating an edge the pillar node information from the intermediate datastructure will be
  * stored in the way geometry of that edge.
@@ -118,6 +118,7 @@ public class OSMReader implements DataReader
     private File osmFile;
     private Map<FlagEncoder, EdgeExplorer> outExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
     private Map<FlagEncoder, EdgeExplorer> inExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
+    private LanduseProcessor areaProcessor = new LanduseProcessor(100);
 
     public OSMReader( GraphStorage storage )
     {
@@ -142,10 +143,16 @@ public class OSMReader implements DataReader
         if (!osmFile.exists())
             throw new IllegalStateException("Your specified OSM file does not exist:" + osmFile.getAbsolutePath());
 
+        //get LanduseTags to apply
+        ArrayList<String> landuseCases = encodingManager.getLanduseTags();
+        areaProcessor.setLanduseCases(landuseCases);
+        
         StopWatch sw1 = new StopWatch().start();
         preProcess(osmFile);
         sw1.stop();
 
+        areaPreprocessing(osmFile);
+        
         StopWatch sw2 = new StopWatch().start();
         writeOsm2Graph(osmFile);
         sw2.stop();
@@ -156,7 +163,8 @@ public class OSMReader implements DataReader
 
     /**
      * Preprocessing of OSM file to select nodes which are used for highways. This allows a more
-     * compact graph data structure.
+     * compact graph data structure. 
+     * Furthermore nodes are selected which represent borders of tag "landuse" areas.
      */
     void preProcess( File osmFile )
     {
@@ -188,8 +196,12 @@ public class OSMReader implements DataReader
                             logger.info(nf(tmpWayCounter) + " (preprocess), osmIdMap:" + nf(getNodeMap().getSize()) + " ("
                                     + getNodeMap().getMemoryUsage() + "MB) " + Helper.getMemInfo());
                         }
+                    } else //not part of way but maybe landuse border
+                    {
+                        areaProcessor.collectImportantNodes(way);
                     }
                 }
+                
                 if (item.isType(OSMElement.RELATION))
                 {
                     final OSMRelation relation = (OSMRelation) item;
@@ -262,6 +274,47 @@ public class OSMReader implements DataReader
     }
 
     /**
+     * Second preprocessing step to define regions of interest. E.g. residential areas to reduce speed. 
+     */
+    private void areaPreprocessing(File osmFile)
+    {
+        OSMInputFile in = null;
+        try
+        {
+            in = new OSMInputFile(osmFile).setWorkerThreads(workerThreads).open();
+
+            long tmpNodeCounter = 1;
+            boolean wayStart = true;
+            OSMElement item;
+            while ((item = in.getNext()) != null) {
+                if (item.isType(OSMElement.NODE)) {
+                    areaProcessor.collectNodeData((OSMNode) item);
+                }
+                if (item.isType(OSMElement.WAY))
+                {
+                    if (wayStart)
+                    {
+                        wayStart = false;
+                        areaProcessor.initEncoding();
+                    } else
+                    {
+                        areaProcessor.addPolygon((OSMWay) item);
+                    }
+                }
+            }
+        } catch (Exception ex)
+        {
+            throw new RuntimeException("Problem while parsing file", ex);
+        } finally
+        {
+            Helper.close(in);
+        }
+        logger.info("Created landuse map, no. pixel:" + nf(areaProcessor.landuseMap.size()) + ", " + Helper.getMemInfo());
+    }
+
+    
+    
+    /**
      * Creates the edges and nodes files from the specified osm file.
      */
     private void writeOsm2Graph( File osmFile )
@@ -298,6 +351,7 @@ public class OSMReader implements DataReader
                         }
                         processWay((OSMWay) item);
                         break;
+                    
                     case OSMElement.RELATION:
                         if (relationStart < 0)
                         {
@@ -312,7 +366,7 @@ public class OSMReader implements DataReader
                     logger.info(nf(counter) + ", locs:" + nf(locations) + " (" + skippedLocations + ") " + Helper.getMemInfo());
                 }
             }
-
+            System.out.println("Final size: " + areaProcessor.landuseMap.size());
             // logger.info("storage nodes:" + storage.nodes() + " vs. graph nodes:" + storage.getGraph().nodes());
         } catch (Exception ex)
         {
@@ -342,29 +396,38 @@ public class OSMReader implements DataReader
         long wayOsmId = way.getId();
 
         long includeWay = encodingManager.acceptWay(way);
-        if (includeWay == 0)
-            return;
 
         long relationFlags = getRelFlagsMap().get(way.getId());
 
         // TODO move this after we have created the edge and know the coordinates => encodingManager.applyWayTags
         // estimate length of the track e.g. for ferry speed calculation
         TLongList osmNodeIds = way.getNodes();
-        if (osmNodeIds.size() > 1)
-        {
-            int first = getNodeMap().get(osmNodeIds.get(0));
-            int last = getNodeMap().get(osmNodeIds.get(osmNodeIds.size() - 1));
-            double firstLat = getTmpLatitude(first), firstLon = getTmpLongitude(first);
-            double lastLat = getTmpLatitude(last), lastLon = getTmpLongitude(last);
-            if (!Double.isNaN(firstLat) && !Double.isNaN(firstLon) && !Double.isNaN(lastLat) && !Double.isNaN(lastLon))
-            {
-                double estimatedDist = distCalc.calcDist(firstLat, firstLon, lastLat, lastLon);
-                way.setTag("estimated_distance", estimatedDist);
-                way.setTag("estimated_center", new GHPoint((firstLat + lastLat) / 2, (firstLon + lastLon) / 2));
-            }
-        }
 
-        long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags);
+        int first = getNodeMap().get(osmNodeIds.get(0));
+        int last = getNodeMap().get(osmNodeIds.get(osmNodeIds.size() - 1));
+        double firstLat = getTmpLatitude(first), firstLon = getTmpLongitude(first);
+        double lastLat = getTmpLatitude(last), lastLon = getTmpLongitude(last);
+        if (!Double.isNaN(firstLat) && !Double.isNaN(firstLon) && !Double.isNaN(lastLat) && !Double.isNaN(lastLon))
+        {
+            double estimatedDist = distCalc.calcDist(firstLat, firstLon, lastLat, lastLon);
+            way.setTag("estimated_distance", estimatedDist);
+            way.setTag("estimated_center", new GHPoint((firstLat + lastLat) / 2, (firstLon + lastLon) / 2));
+        }
+        
+        // Get surrounding of a way. For now consider only surrounding of first and last point, 
+        // as the surrounding is inexact anyhow
+        List<String> spatialSurround = new LinkedList<String>();
+        String waySurroundFirst = areaProcessor.getUsage(firstLat, firstLon);
+        if (!waySurroundFirst.isEmpty())
+        {
+            spatialSurround.add(waySurroundFirst);
+        }
+        String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
+        if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
+        {
+            spatialSurround.add(waySurroundLast);
+        }
+        long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags, spatialSurround);
         if (wayFlags == 0)
             return;
 
