@@ -68,9 +68,19 @@ public class LinearKeyAlgoTest
         assertEquals(16.3333333, latLon.lat, 1e-7);
         assertEquals(5.25, latLon.lon, 1e-7);
     }
-    /*
-    * Test if different constructors yield same results
-     */
+    
+    @Test
+    public void testRoundLat()
+    {
+        LinearKeyAlgo algo = new LinearKeyAlgo(5, 4).setBounds(0, 4, -1, 4);
+        double roundedLat = algo.roundLat(3.3);
+        assertEquals(3.5, roundedLat, 1e-7);
+        roundedLat = algo.roundLat(-0.3);
+        assertEquals(-0.5, roundedLat, 1e-7);
+    }
+    
+    
+    // Test if different constructors yield same results
     @Test
     public void testInstantiation()
     {

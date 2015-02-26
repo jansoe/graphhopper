@@ -198,7 +198,7 @@ public class OSMReader implements DataReader
                         }
                     } else //not part of way but maybe landuse border
                     {
-                        areaProcessor.collectImportantNodes(way);
+                        areaProcessor.collectLanduseNodes(way);
                     }
                 }
                 
@@ -286,8 +286,10 @@ public class OSMReader implements DataReader
             long tmpNodeCounter = 1;
             boolean wayStart = true;
             OSMElement item;
-            while ((item = in.getNext()) != null) {
-                if (item.isType(OSMElement.NODE)) {
+            while ((item = in.getNext()) != null) 
+            {
+                if (item.isType(OSMElement.NODE)) 
+                {
                     areaProcessor.collectNodeData((OSMNode) item);
                 }
                 if (item.isType(OSMElement.WAY))
@@ -295,12 +297,17 @@ public class OSMReader implements DataReader
                     if (wayStart)
                     {
                         wayStart = false;
-                        areaProcessor.initEncoding();
+                        areaProcessor.initLineFill();
                     } else
                     {
                         areaProcessor.addPolygon((OSMWay) item);
                     }
                 }
+                if (item.isType(OSMElement.RELATION))
+                {
+                    break;
+                }
+
             }
         } catch (Exception ex)
         {

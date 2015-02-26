@@ -5,7 +5,11 @@ import com.graphhopper.reader.LanduseProcessor;
 import java.util.*;
 
 /**
- * Created by jan on 16.02.15.
+ * Scan-Line algorithm to fill a complex polygon. 
+ * For details see: http://www-lehre.informatik.uni-osnabrueck.de/~cg/2000/skript/4_2_Scan_Line_Verfahren_f_252_r.html
+ * Basic usage; (1) addEdge (2) finalizeAllEdgesTable (3) doScanLineFill
+ * 
+ * @author jansoe
  */
 public class ScanLinePolyFill
 {
@@ -14,7 +18,7 @@ public class ScanLinePolyFill
     private TreeSet<ScanlineEdge> activeEdges = new TreeSet<ScanlineEdge>(new Comparator<ScanlineEdge>() 
     {
         @Override
-        public int compare(ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2)
+        public int compare( ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2 )
         {
             int comparison = Double.compare(scanlineEdge1.xAtscanlineY, scanlineEdge2.xAtscanlineY);
             if (comparison != 0)
@@ -31,25 +35,27 @@ public class ScanLinePolyFill
     private SpatialMap spatialMap;
     private byte value = 0;
     
-    public ScanLinePolyFill(SpatialMap spatialMap)
+    public ScanLinePolyFill( SpatialMap spatialMap )
     {
         this.spatialMap = spatialMap;
     }
     
-    public void setValue(byte value)
+    public void setValue( byte value )
     {
         this.value = value;        
     }
-    
+
+    /**
+     * Adds edge to global edge table
+     */
     public void addEdge( double x1, double x2, double y1, double y2 )
     {
-         // ToDo detect crossings of -180,-180 lon and 90,90 lat
         double minY, maxY, xAtminY, slopeInverse;
         double deltaX = x2-x1;
         double deltaY = y2-y1;
         
         int comparisionY = Double.compare(y1, y2);
-        if  (comparisionY != 0)
+        if  (comparisionY != 0) // skip horizontal lines
         {
             if (comparisionY<0)
             {
@@ -70,12 +76,12 @@ public class ScanLinePolyFill
             {
                 globalYmin = minY;
             }
-        } else
-        {
-            //skip edge
-        }       
+        }     
     }
-    
+
+    /**
+     * sorts all edges table first by minY and second by X value
+     */
     public void finalizeAllEdgesTable()
     {
         Collections.sort(allEdgesTable, new Comparator<ScanlineEdge>() 
@@ -83,15 +89,29 @@ public class ScanLinePolyFill
             @Override
             public int compare(ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2) 
             {
-                return Double.compare(scanlineEdge1.minY, scanlineEdge2.minY);
+                int comparison = Double.compare(scanlineEdge1.minY, scanlineEdge2.minY);
+                if (comparison != 0)
+                {
+                    return comparison;
+                } else
+                {
+                    return Double.compare(scanlineEdge1.x0, scanlineEdge2.x0);
+                }
             }
         });
         allEdgesTableCompleted = true;        
     }
-    
+
+    /**
+     * performs the scan-line algorithm on finalized (sorted) allEdgesTable 
+     */
     public void doScanlineFill()
     {
         ScanlineEdge nextEdge;
+        if (!allEdgesTableCompleted)
+        {
+            throw new IllegalStateException("Start of Line Fill only after allEdgesTable is finalized");
+        }
         double scanlineY = spatialMap.discretizeY(globalYmin);
         nextEdge = allEdgesTable.pollFirst();
         while (nextEdge != null || !activeEdges.isEmpty())
@@ -151,8 +171,10 @@ public class ScanLinePolyFill
             
         }
     }
-    
-    private class ScanlineEdge {
+
+    // stores relevant data of a polygon edge for scan line algorithm
+    private class ScanlineEdge 
+    {
         private double minY, maxY, x0, xAtscanlineY, slopeInverse;
 
         private ScanlineEdge( double minY, double maxY, double xAtminY, double slopeInverse )
@@ -163,7 +185,7 @@ public class ScanLinePolyFill
             this.slopeInverse = slopeInverse;
         }
 
-        private void updateX2currentY(double currentY)
+        private void updateX2currentY( double currentY )
         {
             double deltaY = currentY - minY;
             xAtscanlineY = x0 + slopeInverse*deltaY;

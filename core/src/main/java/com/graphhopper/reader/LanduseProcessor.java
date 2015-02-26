@@ -13,31 +13,41 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.util.*;
 
 /**
- * Created by jan soe on 11.02.15.
+ * Creats a spatial map of landuse tags, i.e. every spatial grid cell is assigned a landuse key.
+ * Gridsize determines fineness of spatial grid in 110000/gridsize degree, such that gridsize
+ * roughly resembles fineness in meter. 
+ * General usage: (1) collectLanduseNodes (2) collectNodeData (3) initLineFill (4) addPolygon
+ *
+ * A pixel is filled if both the y coordinate crosses the horizontal midline of that pixel and 
+ * the x coordinate the vertical midline
+ *  
+ * @author jan soe
  */
 public class LanduseProcessor implements SpatialMap 
-{
-    
+{    
     private ArrayList<String> landuseCases = new ArrayList<String>();
     private TLongHashSet landuseOSMnodeIds = new TLongHashSet();
     private TLongObjectHashMap<TIntArrayList> nodes2coord = new TLongObjectHashMap<TIntArrayList>();
     public TLongByteHashMap landuseMap;
     private int latUnits, lonUnits;
-    private BBox analyzedArea= BBox.initInverse(false);    
+    private BBox analyzedArea= BBox.createInverse(false);
     private LinearKeyAlgo spatialEncoding;
     private int gridsize;
     
-    public LanduseProcessor(int gridsizeInMeter)
+    public LanduseProcessor( int gridsizeInMeter )
     {
         gridsize = gridsizeInMeter;
     }
     
-    public void setLanduseCases(ArrayList<String> landuseCases)
+    public void setLanduseCases( ArrayList<String> landuseCases )
     {
         this.landuseCases = landuseCases;
     }
-    
-    public void collectImportantNodes(OSMWay way) 
+
+    /**
+     * collects OSM IDs of all nodes  in landuse ways 
+     */
+    public void collectLanduseNodes(OSMWay way)
     {
         String usage = way.getTag("landuse");
         if (usage != null) 
@@ -49,8 +59,11 @@ public class LanduseProcessor implements SpatialMap
             }
         }    
     }
-    
-    public void collectNodeData(OSMNode node)
+
+    /**
+     * Assigns each node lat, lon values  
+     */
+    public void collectNodeData( OSMNode node )
     {
         long nodeId = node.getId();
         if (landuseOSMnodeIds.contains(nodeId))
@@ -62,8 +75,11 @@ public class LanduseProcessor implements SpatialMap
             landuseOSMnodeIds.remove(nodeId);
         }
     }
-    
-    protected void addNodeInfo(long nodeId, double lat, double lon)
+
+    /**
+     * Assigns each node lat, lon values
+     */
+    protected void addNodeInfo( long nodeId, double lat, double lon )
     {
         analyzedArea.update(lat, lon);
         int latInt = Helper.degreeToInt(lat);
@@ -73,27 +89,40 @@ public class LanduseProcessor implements SpatialMap
         coord.add(lonInt);
         nodes2coord.put(nodeId, coord);
     }
-    
-    public void initEncoding()
+
+    /**
+     * Initializes spatial map, i.e. spatial keying according to gridsize and a key-value map with approximate size
+     */
+    public void initLineFill()
     {
-        latUnits = (int) (Math.abs(analyzedArea.maxLat - analyzedArea.minLat)*110000/gridsize);
-        lonUnits = (int) (Math.abs(analyzedArea.maxLon - analyzedArea.minLon)*110000/gridsize);
-        System.out.println("MaxSize: " + latUnits*lonUnits);
+        latUnits = (int) Math.round((Math.abs(analyzedArea.maxLat - analyzedArea.minLat)*110000/gridsize));
+        lonUnits = (int) Math.round((Math.abs(analyzedArea.maxLon - analyzedArea.minLon)*110000/gridsize));
         spatialEncoding = new LinearKeyAlgo(latUnits, lonUnits);
         spatialEncoding.setBounds(analyzedArea);
-        // manual estimate of necessary size
-        System.out.println(nodes2coord.size()* 250/ gridsize);
-        landuseMap = new TLongByteHashMap(nodes2coord.size()* 250/ gridsize, 0.75f);
+
+        System.out.println("MaxSize: " + latUnits*lonUnits);
+        System.out.println("Size guess:" + nodes2coord.size()* 250/ gridsize);
+        
+        // estimate of necessary hashmap size
+        landuseMap = new TLongByteHashMap(Math.min(nodes2coord.size() * 250 / gridsize, latUnits * lonUnits));
         System.out.println("Initial size: " + landuseMap.capacity());
     }
-    
-    public void addPolygon(OSMWay way) 
+
+    /**
+     * Adds filled landuse polygon (OSM way) in spatial map
+     */
+    public boolean addPolygon( OSMWay way )
     {
         String usage = way.getTag("landuse");
         if (usage != null && landuseCases.contains(usage)) 
         {
             byte usageKey = (byte) landuseCases.indexOf(usage); 
             TLongList nodes = way.getNodes();
+            // Skip polygon if it crosses -180,180 boundary, ToDo: take care of this bordercase 
+            if (Math.signum(analyzedArea.minLon) != Math.signum(analyzedArea.maxLon))
+            {
+                return false;
+            }
             ScanLinePolyFill polyFill = new ScanLinePolyFill(this);
             polyFill.setValue(usageKey);
             int ix1 = nodes.size()-1;
@@ -111,18 +140,25 @@ public class LanduseProcessor implements SpatialMap
             polyFill.finalizeAllEdgesTable();
             polyFill.doScanlineFill();
         }
+        return true;
     }
-    
+
+    /**
+     * @return latitude rastering step 
+     */
     public double getYStep()
     {
         return spatialEncoding.getLatDelta();
     }
-    
-    public void fillLine(double lat, double lon1, double lon2, byte value)
+
+    /**
+     * adds param value at spatial keys at latitude lat and from longitude lon1+lonDelta/2 to lon2+lonDelta/2.
+     * Addition of
+     */
+    public void fillLine( double lat, double lon1, double lon2, byte value )
     {
-        //ToDo: Round x1, x2
-        long spatialKey1 = spatialEncoding.encode(lat, lon1);
-        long spatialKey2 = spatialEncoding.encode(lat, lon2);
+        long spatialKey1 = spatialEncoding.encode(lat, lon1 + spatialEncoding.getLonDelta()/2);
+        long spatialKey2 = spatialEncoding.encode(lat, lon2 - spatialEncoding.getLonDelta()/2);
 
         while (Double.compare(spatialKey1,spatialKey2) <= 0)
         {
@@ -147,11 +183,11 @@ public class LanduseProcessor implements SpatialMap
             return "";
         }
     }
-    
+
     public void print()
     {
         long key = 0;
-        for(int lat = 0; lat < latUnits; lat++) 
+        for(int lat = 0; lat < latUnits; lat++)
         {
             for(int lon=0; lon< lonUnits; lon++)
             {
@@ -161,12 +197,5 @@ public class LanduseProcessor implements SpatialMap
             }
             System.out.println(" ");
         }
-        
-        
-    } 
-    
-    public int getLength()
-    {
-        return landuseOSMnodeIds.size();
     }
 }

@@ -50,24 +50,6 @@ public class LinearKeyAlgo implements KeyAlgo
         setWorldBounds();
     }
 
-    /**
-     * modifies the spatial key to yield the key of the next square in lat-direction
-     * ToDo: if bounding box is exceeded, continues at other end
-     */
-    public long nextLon(long spatialKey, boolean forward)
-    {
-        return forward? spatialKey+1: spatialKey-1;
-    }
-    
-    /**
-     * modifies the spatial key to yield the key of the next square in lon-direction
-     * ToDo: if bounding box is exceeded, continues at other end
-     */
-    public long nextLat(long spatialKey, boolean forward)
-    {
-        return forward? spatialKey+lonUnits: spatialKey-lonUnits;
-    }
-    
     @Override
     public LinearKeyAlgo setBounds( double minLonInit, double maxLonInit, double minLatInit, double maxLatInit )
     {
@@ -82,9 +64,7 @@ public class LinearKeyAlgo implements KeyAlgo
         setBounds(bounds.minLon, bounds.maxLon, bounds.minLat, bounds.maxLat);
         return this;
     }
-    
-
-    
+        
     protected void setWorldBounds()
     {
         setBounds(-180, 180, -90, 90);
@@ -110,8 +90,7 @@ public class LinearKeyAlgo implements KeyAlgo
         long latIndex = (long) ((lat - bounds.minLat) / latDelta * C);
         long lonIndex = (long) ((lon - bounds.minLon) / lonDelta * C);
         return latIndex * lonUnits + lonIndex;
-    }
-    
+    }    
 
     /**
      * This method returns latitude and longitude via latLon - calculated from specified linearKey
@@ -126,8 +105,14 @@ public class LinearKeyAlgo implements KeyAlgo
         latLon.lat = lat + latDelta / 2;
         latLon.lon = lon + lonDelta / 2;
     }
-    
-    public final double roundLat(double lat)
+
+    /**
+     * This method discretizes a latitude value to the corresponding key value, 
+     * i.e. performs an encoding and decoding of the latitude value
+     * @param lat latitude value
+     * @return discretized latitude value
+     */
+    public double roundLat(double lat)
     {
         lat = Math.min(Math.max(lat, bounds.minLat), bounds.maxLat);
         long latIndex = (long) ((lat - bounds.minLat) / latDelta * C);
