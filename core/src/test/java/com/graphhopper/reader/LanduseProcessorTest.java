@@ -15,11 +15,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class LanduseProcessorTest extends TestCase {
-    
+
     // Fill 2 square polygons with different tags
     @Test
-    public void test2SquareFill()
-    {
+    public void test2SquareFill() {
 
         OSMWay poly;
         LanduseProcessor landuseProcessor = new LanduseProcessor(1100);
@@ -28,13 +27,13 @@ public class LanduseProcessorTest extends TestCase {
         cases.add("typo");
         cases.add("commercial");
         landuseProcessor.setLanduseCases(cases);
-        
+
         // First Poly
         landuseProcessor.addNodeInfo(0, 50.00500, 10.00);
         landuseProcessor.addNodeInfo(1, 50.02501, 10.00);
         landuseProcessor.addNodeInfo(2, 50.02501, 10.0151);
         landuseProcessor.addNodeInfo(3, 50.00500, 10.0151);
-        
+
         // Second Poly
         landuseProcessor.addNodeInfo(4, 50.00500, 10.03);
         landuseProcessor.addNodeInfo(5, 50.03501, 10.03);
@@ -42,17 +41,17 @@ public class LanduseProcessorTest extends TestCase {
         landuseProcessor.addNodeInfo(7, 50.00500, 10.05);
 
         // to increase boundary margin
-        landuseProcessor.addNodeInfo(8, 49.99,  9.98);
-        landuseProcessor.addNodeInfo(9, 50.05,  10.06);
+        landuseProcessor.addNodeInfo(8, 49.99, 9.98);
+        landuseProcessor.addNodeInfo(9, 50.05, 10.06);
 
         landuseProcessor.initLineFill();
         poly = new OSMWay(0);
-        poly.nodes.add(new long[]{0,1,2,3});
+        poly.nodes.add(new long[]{0, 1, 2, 3});
         poly.setTag("landuse", "residential");
         landuseProcessor.addPolygon(poly);
 
         poly = new OSMWay(1);
-        poly.nodes.add(new long[]{4,5,6,7});
+        poly.nodes.add(new long[]{4, 5, 6, 7});
         poly.setTag("landuse", "commercial");
         landuseProcessor.addPolygon(poly);
 
@@ -63,7 +62,7 @@ public class LanduseProcessorTest extends TestCase {
         byte fillValue1 = (byte) cases.indexOf("residential");
         for (long key : expectedKeys1.toArray())
             assertEquals("wrong spatial map entry", fillValue1, landuseProcessor.landuseMap.get(key));
-        
+
         byte fillValue2 = (byte) cases.indexOf("commercial");
         for (long key : expectedKeys2.toArray())
             assertEquals("wrong spatial map entry", fillValue2, landuseProcessor.landuseMap.get(key));
@@ -77,8 +76,7 @@ public class LanduseProcessorTest extends TestCase {
 
     // Fill almost square polygons with different tags
     @Test
-    public void testSquareFillRound()
-    {
+    public void testSquareFillRound() {
         LanduseProcessor landuseProcessor = new LanduseProcessor(1100);
         ArrayList<String> cases = new ArrayList<String>();
         cases.add("residential");
@@ -95,7 +93,7 @@ public class LanduseProcessorTest extends TestCase {
 
         landuseProcessor.initLineFill();
         OSMWay poly = new OSMWay(0);
-        poly.nodes.add(new long[]{0,1,2,3});
+        poly.nodes.add(new long[]{0, 1, 2, 3});
         poly.setTag("landuse", "residential");
         landuseProcessor.addPolygon(poly);
 
@@ -106,11 +104,10 @@ public class LanduseProcessorTest extends TestCase {
         for (long key : expectedKeys.toArray())
             assertEquals("wrong spatial map entry", fillValue, landuseProcessor.landuseMap.get(key));
     }
-    
+
     // Fill almost square polygons with different tags
     @Test
-    public void testSquareFillRound()
-    {
+    public void testComplexFill() {
         LanduseProcessor landuseProcessor = new LanduseProcessor(1100);
         ArrayList<String> cases = new ArrayList<String>();
         cases.add("residential");
@@ -125,6 +122,6 @@ public class LanduseProcessorTest extends TestCase {
         landuseProcessor.addNodeInfo(4, 50.00, 10.00);
         landuseProcessor.addNodeInfo(5, 50.05, 10.10);
 
-
-
+        landuseProcessor.print();
     }
+}
