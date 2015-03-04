@@ -50,7 +50,7 @@ public class RoundaboutInstruction extends Instruction
     public RoundaboutInstruction setExited()
     {
         exited = true;
-        if (clockwise != -1)
+        if (clockwise != 1)
         {
             throw new IllegalStateException("counterclockwise rotation detected");
         }
