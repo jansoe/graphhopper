@@ -52,7 +52,7 @@ public class RoundaboutInstruction extends Instruction
         exited = true;
         if (clockwise != 1)
         {
-            throw new IllegalStateException("counterclockwise rotation detected");
+           System.out.println("counterclockwise rotation detected");
         }
 
         return this;
