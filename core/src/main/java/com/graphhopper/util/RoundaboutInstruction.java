@@ -31,17 +31,17 @@ public class RoundaboutInstruction extends Instruction
         return this;
     }
 
-    public RoundaboutInstruction setDirOfRotation( double deltaIn )
+    public RoundaboutInstruction setDirOfRotation( boolean clockwise )
     {
-        if (clockwise == 0)
+        if (this.clockwise == 0)
         {
-            clockwise = deltaIn > 0 ? 1 : -1;
+            this.clockwise = clockwise ? 1 : -1;
         } else
         {
-            int clockwise2 = deltaIn > 0 ? 1 : -1;
-            if (clockwise != clockwise2)
+            int clockwise2 = clockwise ? 1 : -1;
+            if (this.clockwise != clockwise2)
             {
-                clockwise = 2;
+                this.clockwise = 2;
             }
         }
         return this;
@@ -50,6 +50,11 @@ public class RoundaboutInstruction extends Instruction
     public RoundaboutInstruction setExited()
     {
         exited = true;
+        if (clockwise != -1)
+        {
+            throw new IllegalStateException("counterclockwise rotation detected");
+        }
+
         return this;
     }
 

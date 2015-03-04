@@ -357,7 +357,7 @@ public class InstructionListTest
         pl.add(52.514, 13.351);
         RoundaboutInstruction instr = new RoundaboutInstruction(Instruction.USE_ROUNDABOUT, "streetname",
                 new InstructionAnnotation(0, ""), pl)
-                .setDirOfRotation(-0.1)
+                .setDirOfRotation(false)
                 .setRadian(-Math.PI + 1)
                 .setExitNumber(2)
                 .setExited();

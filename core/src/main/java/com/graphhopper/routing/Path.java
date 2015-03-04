@@ -413,6 +413,52 @@ public class Path
             private InstructionAnnotation annotation, prevAnnotation;
             private EdgeExplorer outEdgeExplorer = graph.createEdgeExplorer(new DefaultEdgeFilter(encoder, false, true));
 
+            private EdgeExplorer allEdgeExplorer = graph.createEdgeExplorer(new DefaultEdgeFilter(encoder, true, true));
+
+            /**
+             * determines the orientation of the previous/next roundabout edge
+             *
+             * @param jointNode node where the previous/next edge connects 
+             * @param secondNode second node of the current edge
+             * @param previous previous or next edge
+             * @return orientation in radian of 2 roundabout edges
+             */
+            private double getOtherEdgeOrientation(int jointNode, int secondNode, boolean previous)
+            {
+                double lat, lon;
+                double jointLat = nodeAccess.getLatitude(jointNode);
+                double jointLon = nodeAccess.getLongitude(jointNode);
+                boolean foundOther = false;
+                EdgeIterator edgeIter = allEdgeExplorer.setBaseNode(jointNode);
+
+                while (edgeIter.next())
+                {
+                    foundOther = (encoder.isBool(edgeIter.getFlags(), encoder.K_ROUNDABOUT))
+                            && (edgeIter.getAdjNode() != secondNode);
+                    if (foundOther)
+                    {
+                        break;
+                    }
+                }
+                if (!foundOther)
+                {
+                    throw new IllegalStateException("Roundabout edge has no connection to other roundabout edge");
+                }
+
+                PointList wayGeo = edgeIter.fetchWayGeometry(3);
+
+                lat = wayGeo.getLatitude(1);
+                lon = wayGeo.getLongitude(1);
+                if (previous)
+                {
+                    return ac.calcOrientation(lat, lon, jointLat, jointLon);
+                } else
+                {
+                    return ac.calcOrientation(jointLat, jointLon, lat, lon);
+                }
+
+            }
+
             @Override
             public void next( EdgeIteratorState edge, int index )
             {
@@ -473,16 +519,39 @@ public class Path
                                         break;
                                     }
                                 }
+                                
+                                //determine direction of rotation
+                                double incomingOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
+                                // calculate reverse orientation of roundabout edge on route
+                                double roundaboutOrientation = ac.calcOrientation(latitude, longitude, prevLat, prevLon);
+                                double deltaRoute = (incomingOrientation - roundaboutOrientation);
+                                if (deltaRoute<0)
+                                {
+                                    deltaRoute = Math.PI-deltaRoute;
+                                } else if (deltaRoute >= 2*Math.PI)
+                                {
+                                    deltaRoute -= 2*Math.PI;
+                                }
+                                // calculate direction of incoming roundabout edge
+                                try
+                                {
+                                    double roundaboutOrientation2 = getOtherEdgeOrientation(baseNode, adjNode, true);
+                                    double deltaRoundabout = (roundaboutOrientation2 - roundaboutOrientation);
+                                    if (deltaRoundabout<0)
+                                    {
+                                        deltaRoundabout = Math.PI-deltaRoundabout;
+                                    };
+                                    if (deltaRoundabout >= 2*Math.PI)
+                                    {
+                                        deltaRoundabout -= 2*Math.PI;
+                                    }
+                                    roundaboutInstruction.setDirOfRotation(deltaRoute < deltaRoundabout);
+                                } catch (IllegalStateException exception)
+                                {
+                                    System.out.println("No direction detected");
+                                }
+                                    
 
-                                // previous orientation is last orientation before entering roundabout
-                                prevOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
-
-                                // calculate direction of entrance turn to determine direction of rotation
-                                // right turn == counterclockwise and vice versa
-                                double orientation = ac.calcOrientation(prevLat, prevLon, latitude, longitude);
-                                orientation = ac.alignOrientation(prevOrientation, orientation);
-                                double delta = (orientation - prevOrientation);
-                                roundaboutInstruction.setDirOfRotation(delta);
 
                             } else // first instructions is roundabout instruction
                             {
@@ -516,15 +585,8 @@ public class Path
                         orientation = ac.alignOrientation(prevOrientation, orientation);
                         double deltaInOut = (orientation - prevOrientation);
 
-                        // calculate direction of exit turn to determine direction of rotation
-                        // right turn == counterclockwise and vice versa
-                        double recentOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
-                        orientation = ac.alignOrientation(recentOrientation, orientation);
-                        double deltaOut = (orientation - recentOrientation);
-
                         prevInstruction = ((RoundaboutInstruction) prevInstruction)
                                 .setRadian(deltaInOut)
-                                .setDirOfRotation(deltaOut)
                                 .setExited();
 
                         prevName = name;
