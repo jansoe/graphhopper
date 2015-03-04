@@ -9,8 +9,7 @@ import java.util.Map;
 public class RoundaboutInstruction extends Instruction
 {
     private int exitNumber = 0;
-    // 0 undetermined, 1 clockwise, -1 counterclockwise, 2 inconsistent
-    private int clockwise = 0;
+    private int clockwise = 0; // 0 undetermined, 1 clockwise, -1 counterclockwise, 2 inconsistent
     private boolean exited = false;
     private double radian = Double.NaN;
 
@@ -50,7 +49,7 @@ public class RoundaboutInstruction extends Instruction
     public RoundaboutInstruction setExited()
     {
         exited = true;
-        if (clockwise != 1)
+        if (clockwise == -1)
         {
            System.out.println("counterclockwise rotation detected");
         }
