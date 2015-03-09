@@ -197,12 +197,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      * Analyze properties of a way and create the routing flags. This method is called in the second
      * parsing step.
      */
-    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround );
-
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
-    {
-        return handleWayTags(way, allowed, relationFlags, Collections.<String>emptyList());
-    };
+    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags);
 
 
     /**

@@ -455,6 +455,22 @@ public class CarFlagEncoderTest
     }
 
     @Test
+    public void testSetLanduseSpeed()
+    {
+        OSMWay way = new OSMWay(1);
+        way.setTag("landuse", "residential");
+        way.setTag("highway", "secondary");
+       
+        long speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
+        assertEquals(encoder.landuseSpeed.get("residential"), Double.valueOf(encoder.getSpeed(speedflag)),0.001);
+
+        // test overwrite by maxspeed
+        way.setTag("maxspeed", "100");
+        speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
+        assertEquals(100*0.9, encoder.getSpeed(speedflag), 0.001);
+    }
+
+    @Test
     public void testFordAccess()
     {
         OSMNode node = new OSMNode(0, 0.0, 0.0);

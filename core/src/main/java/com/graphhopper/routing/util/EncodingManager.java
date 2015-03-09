@@ -255,15 +255,14 @@ public class EncodingManager
      * directly encoded in 8 bytes.
      * <p/>
      * @param relationFlags The preprocessed relation flags is used to influence the way properties.
-     * @param spatialSurround gives the tags of the surrounding area of the way, and thus can influence way properties
      * @return the encoded flags
      */
-    public long handleWayTags( OSMWay way, long includeWay, long relationFlags , List<String> spatialSurround)
+    public long handleWayTags( OSMWay way, long includeWay, long relationFlags)
     {
         long flags = 0;
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
-            flags |= encoder.handleWayTags(way, includeWay, relationFlags & encoder.getRelBitMask(), spatialSurround);
+            flags |= encoder.handleWayTags(way, includeWay, relationFlags & encoder.getRelBitMask());
         }
 
         return flags;
@@ -449,9 +448,14 @@ public class EncodingManager
         return new EncodingManager(acceptStr, bytesForFlags);
     }
 
+    /**
+     * @return all landuse tags, used by any of the encoders.
+     */
+    
     public ArrayList<String> getLanduseTags()
     {
-        Set landuseTags = new HashSet<String>();
+        // use LinkedHashSet to have deterministic ordering
+        Set landuseTags = new LinkedHashSet<String>();
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             landuseTags.addAll(encoder.getLanduseTags());

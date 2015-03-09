@@ -118,7 +118,8 @@ public class OSMReader implements DataReader
     private File osmFile;
     private Map<FlagEncoder, EdgeExplorer> outExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
     private Map<FlagEncoder, EdgeExplorer> inExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
-    private LanduseProcessor areaProcessor = new LanduseProcessor(100);
+    private LanduseProcessor areaProcessor = new LanduseProcessor(200);
+    ArrayList<String> landuseCases;
 
     public OSMReader( GraphStorage storage )
     {
@@ -144,21 +145,30 @@ public class OSMReader implements DataReader
             throw new IllegalStateException("Your specified OSM file does not exist:" + osmFile.getAbsolutePath());
 
         //get LanduseTags to apply
-        ArrayList<String> landuseCases = encodingManager.getLanduseTags();
+        landuseCases = encodingManager.getLanduseTags();
         areaProcessor.setLanduseCases(landuseCases);
         
         StopWatch sw1 = new StopWatch().start();
         preProcess(osmFile);
         sw1.stop();
 
-        areaPreprocessing(osmFile);
+        long memBeforeLanduse = Helper.getUsedMB();
+        StopWatch sw3 = new StopWatch().start();
+        if (landuseCases.size() >0)
+        {
+            areaPreprocessing(osmFile);
+        }
+        sw3.stop();
+        long memLanduse = Helper.getUsedMB() - memBeforeLanduse;
+        logger.info("Memory for landuse map: " + memLanduse + "[MB]");
         
         StopWatch sw2 = new StopWatch().start();
         writeOsm2Graph(osmFile);
         sw2.stop();
 
-        logger.info("time(pass1): " + (int) sw1.getSeconds() + " pass2: " + (int) sw2.getSeconds() + " total:"
-                + ((int) (sw1.getSeconds() + sw2.getSeconds())));
+        logger.info("time(pass1): " + (int) sw1.getSeconds() + " pass2: " + (int) sw2.getSeconds() 
+                + " passLanduse: " + (int) sw3.getSeconds() + " total:"
+                + ((int) (sw1.getSeconds() + sw2.getSeconds() + sw3.getSeconds())));
     }
 
     /**
@@ -298,7 +308,7 @@ public class OSMReader implements DataReader
                     {
                         wayStart = false;
                         areaProcessor.initLineFill();
-                    } else
+                    } else if (landuseCases.size()>0)
                     {
                         areaProcessor.addPolygon((OSMWay) item);
                     }
@@ -423,18 +433,20 @@ public class OSMReader implements DataReader
         
         // Get surrounding of a way. For now consider only surrounding of first and last point, 
         // as the surrounding is inexact anyhow
-        List<String> spatialSurround = new LinkedList<String>();
+        String spatialSurround = "";
         String waySurroundFirst = areaProcessor.getUsage(firstLat, firstLon);
         if (!waySurroundFirst.isEmpty())
         {
-            spatialSurround.add(waySurroundFirst);
+            spatialSurround += waySurroundFirst+";";
         }
         String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
         if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
         {
-            spatialSurround.add(waySurroundLast);
+            spatialSurround += waySurroundLast;
         }
-        long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags, spatialSurround);
+        way.setTag("spatial_surround", spatialSurround);
+        long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags);
+                
         if (wayFlags == 0)
             return;
 

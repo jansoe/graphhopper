@@ -156,7 +156,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround )
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
     {
         if (!isAccept(allowed))
             return 0;

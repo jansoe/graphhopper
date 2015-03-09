@@ -157,6 +157,7 @@ public class LanduseProcessor implements SpatialMap
      */
     public void fillLine( double lat, double lon1, double lon2, byte value )
     {
+        // fill only if more than half of square is filled
         long spatialKey1 = spatialEncoding.encode(lat, lon1 + spatialEncoding.getLonDelta()/2);
         long spatialKey2 = spatialEncoding.encode(lat, lon2 - spatialEncoding.getLonDelta()/2);
 

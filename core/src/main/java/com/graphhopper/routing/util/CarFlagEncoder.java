@@ -167,12 +167,13 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         return speed;
     }
     
-    protected double applyAreaSpeed( double oldSpeed, List<String> landuses )
+    protected double applyAreaSpeed( double oldSpeed, OSMWay way )
     {
         double speed = oldSpeed;
-        if (landuseSpeed.size() > 0) 
+        String landuses = way.getTag("landuse", "");
+        if (landuseSpeed.size() > 0 && !landuses.isEmpty())
         {
-            for (String landuse : landuses)
+            for (String landuse : landuses.split(";"))
             {
                 double areaSpeed = landuseSpeed.get(landuse);
                 if (speed > areaSpeed) 
@@ -238,7 +239,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags, List<String> surround)
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
     {
         if (!isAccept(allowed))
             return 0;
@@ -249,7 +250,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
             // get assumed speed from highway type
             double speed = getSpeed(way);
             // restrict speed within landuse areas
-            speed = applyAreaSpeed(speed, surround);
+            speed = applyAreaSpeed(speed, way);
             // apply maxpeed tag
             speed = applyMaxSpeed(way, speed, true);
 
