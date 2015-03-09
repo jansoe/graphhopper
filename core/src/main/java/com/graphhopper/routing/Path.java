@@ -522,8 +522,10 @@ public class Path
                                 
                                 //determine direction of rotation
                                 double incomingOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
+                                System.out.println("incoming: " + incomingOrientation);
                                 // calculate reverse orientation of roundabout edge on route
-                                double roundaboutOrientation = ac.calcOrientation(latitude, longitude, prevLat, prevLon);
+                                double roundaboutOrientation = ac.calcOrientation(prevLat, prevLon, latitude, longitude);
+                                System.out.println("taken: " + roundaboutOrientation);
                                 double deltaRoute = (incomingOrientation - roundaboutOrientation);
                                 if (deltaRoute<0)
                                 {
@@ -536,6 +538,7 @@ public class Path
                                 try
                                 {
                                     double roundaboutOrientation2 = getOtherEdgeOrientation(baseNode, adjNode, true);
+                                    System.out.println("other: " + roundaboutOrientation2);
                                     double deltaRoundabout = (roundaboutOrientation2 - roundaboutOrientation);
                                     if (deltaRoundabout<0)
                                     {
@@ -549,6 +552,7 @@ public class Path
                                 } catch (IllegalStateException exception)
                                 {
                                     System.out.println("No direction detected");
+                                    System.out.println(prevLat + " " + prevLon);
                                 }
                                     
 
