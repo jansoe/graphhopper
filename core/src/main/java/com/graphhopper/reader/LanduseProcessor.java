@@ -28,11 +28,12 @@ public class LanduseProcessor implements SpatialMap
     private ArrayList<String> landuseCases = new ArrayList<String>();
     private TLongHashSet landuseOSMnodeIds = new TLongHashSet();
     private TLongObjectHashMap<TIntArrayList> nodes2coord = new TLongObjectHashMap<TIntArrayList>();
-    public TLongByteHashMap landuseMap;
+    public TLongByteHashMap landuseMap = new TLongByteHashMap(5, 0.75f);
     private int latUnits, lonUnits;
     private BBox analyzedArea= BBox.createInverse(false);
     private LinearKeyAlgo spatialEncoding;
     private int gridsize;
+    private boolean finishedConstruction = false;
     
     public LanduseProcessor( int gridsizeInMeter )
     {
@@ -40,7 +41,11 @@ public class LanduseProcessor implements SpatialMap
     }
     
     public void setLanduseCases( ArrayList<String> landuseCases )
-    {
+    {        
+        if (finishedConstruction)
+        {
+            throw new IllegalStateException("Can't modify finished landuse map");
+        }
         this.landuseCases = landuseCases;
     }
 
@@ -76,9 +81,6 @@ public class LanduseProcessor implements SpatialMap
         }
     }
 
-    /**
-     * Assigns each node lat, lon values
-     */
     protected void addNodeInfo( long nodeId, double lat, double lon )
     {
         analyzedArea.update(lat, lon);
@@ -104,8 +106,10 @@ public class LanduseProcessor implements SpatialMap
         System.out.println("Size guess:" + nodes2coord.size()* 250/ gridsize);
         
         // estimate of necessary hashmap size
-        landuseMap = new TLongByteHashMap(Math.min(nodes2coord.size() * 250 / gridsize, latUnits * lonUnits));
+        landuseMap.ensureCapacity(Math.min(nodes2coord.size() * 250 / gridsize, latUnits * lonUnits));
         System.out.println("Initial size: " + landuseMap.capacity());
+        
+        finishedConstruction = true;        
     }
 
     /**
@@ -175,6 +179,10 @@ public class LanduseProcessor implements SpatialMap
     
     public String getUsage( double lat, double lon )
     {
+        if (!finishedConstruction)
+        {
+            throw new IllegalStateException("Initialization has to be finished before querying landuse map");
+        }
         byte usage = landuseMap.get(spatialEncoding.encode(lat, lon));
         if (usage != landuseMap.getNoEntryValue())
         {

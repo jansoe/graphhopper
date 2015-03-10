@@ -120,7 +120,8 @@ public class OSMReader implements DataReader
     private Map<FlagEncoder, EdgeExplorer> inExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
     private LanduseProcessor areaProcessor = new LanduseProcessor(200);
     ArrayList<String> landuseCases;
-
+    boolean useLanduse = true;
+    
     public OSMReader( GraphStorage storage )
     {
         this.graphStorage = storage;
@@ -131,7 +132,12 @@ public class OSMReader implements DataReader
         osmWayIdToRouteWeightMap = new TLongLongHashMap(200, .5f, 0, 0);
         pillarInfo = new PillarInfo(nodeAccess.is3D(), graphStorage.getDirectory());
     }
-
+    
+    public void setUseLanduse(boolean useLanduse)
+    {
+        this.useLanduse = useLanduse;
+    }
+    
     @Override
     public void readGraph() throws IOException
     {
@@ -154,7 +160,7 @@ public class OSMReader implements DataReader
 
         long memBeforeLanduse = Helper.getUsedMB();
         StopWatch sw3 = new StopWatch().start();
-        if (landuseCases.size() >0)
+        if (useLanduse && landuseCases.size()>0)
         {
             areaPreprocessing(osmFile);
         }
@@ -308,7 +314,7 @@ public class OSMReader implements DataReader
                     {
                         wayStart = false;
                         areaProcessor.initLineFill();
-                    } else if (landuseCases.size()>0)
+                    } else if (useLanduse && landuseCases.size()>0)
                     {
                         areaProcessor.addPolygon((OSMWay) item);
                     }
@@ -434,15 +440,18 @@ public class OSMReader implements DataReader
         // Get surrounding of a way. For now consider only surrounding of first and last point, 
         // as the surrounding is inexact anyhow
         String spatialSurround = "";
-        String waySurroundFirst = areaProcessor.getUsage(firstLat, firstLon);
-        if (!waySurroundFirst.isEmpty())
+        if (useLanduse && landuseCases.size()>0)
         {
-            spatialSurround += waySurroundFirst+";";
-        }
-        String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
-        if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
-        {
-            spatialSurround += waySurroundLast;
+            String waySurroundFirst = areaProcessor.getUsage(firstLat, firstLon);
+            if (!waySurroundFirst.isEmpty())
+            {
+                spatialSurround += waySurroundFirst + ";";
+            }
+            String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
+            if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
+            {
+                spatialSurround += waySurroundLast;
+            }
         }
         way.setTag("spatial_surround", spatialSurround);
         long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags);

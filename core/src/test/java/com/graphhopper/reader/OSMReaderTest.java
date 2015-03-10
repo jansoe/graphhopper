@@ -643,6 +643,8 @@ public class OSMReaderTest
         way.setTag("highway", "motorway");
         osmreader.getNodeMap().put(1, 1);
         osmreader.getNodeMap().put(2, 2);
+        
+        osmreader.setUseLanduse(false);
         osmreader.processWay(way);
 
         GHPoint p = way.getTag("estimated_center", null);

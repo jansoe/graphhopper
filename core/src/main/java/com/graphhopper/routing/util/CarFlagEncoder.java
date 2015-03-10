@@ -170,11 +170,15 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     protected double applyAreaSpeed( double oldSpeed, OSMWay way )
     {
         double speed = oldSpeed;
-        String landuses = way.getTag("landuse", "");
+        String landuses = way.getTag("spatial_surround", "");
         if (landuseSpeed.size() > 0 && !landuses.isEmpty())
         {
             for (String landuse : landuses.split(";"))
             {
+                if (!landuseSpeed.containsKey(landuse))
+                {
+                    continue;
+                }
                 double areaSpeed = landuseSpeed.get(landuse);
                 if (speed > areaSpeed) 
                 {

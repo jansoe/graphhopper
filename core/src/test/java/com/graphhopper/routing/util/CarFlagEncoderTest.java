@@ -458,7 +458,7 @@ public class CarFlagEncoderTest
     public void testSetLanduseSpeed()
     {
         OSMWay way = new OSMWay(1);
-        way.setTag("landuse", "residential");
+        way.setTag("spatial_surround", "nonsense;residential");
         way.setTag("highway", "secondary");
        
         long speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
