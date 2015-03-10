@@ -117,11 +117,7 @@ public class LanduseProcessor implements SpatialMap
         {
             byte usageKey = (byte) landuseCases.indexOf(usage); 
             TLongList nodes = way.getNodes();
-            // Skip polygon if it crosses -180,180 boundary, ToDo: take care of this bordercase 
-            if (Math.signum(analyzedArea.minLon) != Math.signum(analyzedArea.maxLon))
-            {
-                return false;
-            }
+
             ScanLinePolyFill polyFill = new ScanLinePolyFill(this);
             polyFill.setValue(usageKey);
             int ix1 = nodes.size()-1;
@@ -134,6 +130,11 @@ public class LanduseProcessor implements SpatialMap
                 double lat2 = Helper.intToDegree(coord2.get(0));
                 double lon2 = Helper.intToDegree(coord2.get(1));
                 polyFill.addEdge(lon1, lon2, lat1, lat2);
+                //do not process polygons which cross the -180,180 jump (ToDo: handle proberly)
+                if (Math.signum(lon1) != Math.signum(lon2) && Math.abs(lon1)>170)
+                {
+                    return false;
+                }
                 ix1 = ix2;
             }
             polyFill.finalizeAllEdgesTable();

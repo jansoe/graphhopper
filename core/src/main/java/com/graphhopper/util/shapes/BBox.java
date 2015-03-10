@@ -36,12 +36,9 @@ public class BBox implements Shape, Cloneable
 {
 
     // longitude (theta) = x, latitude (phi) = y, elevation = z
-    public double minLon;
-    public double maxLon;
-    public double minLat;
-    public double maxLat;
-    public double minEle;
-    public double maxEle;
+    public double minLon, maxLon;
+    public double minLat, maxLat;
+    public double minEle, maxEle;
     private final boolean elevation;
 
     public BBox( double minLon, double maxLon, double minLat, double maxLat )
@@ -106,6 +103,7 @@ public class BBox implements Shape, Cloneable
         {
             minLon = lon;
         }
+
     }
 
     public void update( double lat, double lon, double elev )
