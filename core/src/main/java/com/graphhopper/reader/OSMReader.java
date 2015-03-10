@@ -158,22 +158,19 @@ public class OSMReader implements DataReader
         preProcess(osmFile);
         sw1.stop();
 
-        long memBeforeLanduse = Helper.getUsedMB();
         StopWatch sw3 = new StopWatch().start();
         if (useLanduse && landuseCases.size()>0)
         {
             areaPreprocessing(osmFile);
         }
         sw3.stop();
-        long memLanduse = Helper.getUsedMB() - memBeforeLanduse;
-        logger.info("Memory for landuse map: " + memLanduse + "[MB]");
-        
+
         StopWatch sw2 = new StopWatch().start();
         writeOsm2Graph(osmFile);
         sw2.stop();
 
-        logger.info("time(pass1): " + (int) sw1.getSeconds() + " pass2: " + (int) sw2.getSeconds() 
-                + " passLanduse: " + (int) sw3.getSeconds() + " total:"
+        logger.info("time: (pre) " + (int) sw1.getSeconds() + " (area): " + (int) sw3.getSeconds()
+                + " (read): " + (int) sw2.getSeconds() + " total:"
                 + ((int) (sw1.getSeconds() + sw2.getSeconds() + sw3.getSeconds())));
     }
 
@@ -299,11 +296,11 @@ public class OSMReader implements DataReader
         {
             in = new OSMInputFile(osmFile).setWorkerThreads(workerThreads).open();
 
-            long tmpNodeCounter = 1;
             boolean wayStart = true;
             OSMElement item;
             while ((item = in.getNext()) != null) 
             {
+                
                 if (item.isType(OSMElement.NODE)) 
                 {
                     areaProcessor.collectNodeData((OSMNode) item);
@@ -314,14 +311,16 @@ public class OSMReader implements DataReader
                     {
                         wayStart = false;
                         areaProcessor.initLineFill();
-                    } else if (useLanduse && landuseCases.size()>0)
+                        logger.info("Landuse map initial capacity: " + areaProcessor.landuseMap.capacity());
+
+                    } else
                     {
                         areaProcessor.addPolygon((OSMWay) item);
                     }
                 }
                 if (item.isType(OSMElement.RELATION))
                 {
-                    break;
+                    //break; causes exception, but would save some time!
                 }
 
             }
@@ -332,7 +331,7 @@ public class OSMReader implements DataReader
         {
             Helper.close(in);
         }
-        logger.info("Created landuse map, no. pixel:" + nf(areaProcessor.landuseMap.size()) + ", " + Helper.getMemInfo());
+        logger.info("Created landuse map, #tiles:" + nf(areaProcessor.landuseMap.size()) + ", " + Helper.getMemInfo());
     }
 
     
@@ -389,7 +388,6 @@ public class OSMReader implements DataReader
                     logger.info(nf(counter) + ", locs:" + nf(locations) + " (" + skippedLocations + ") " + Helper.getMemInfo());
                 }
             }
-            System.out.println("Final size: " + areaProcessor.landuseMap.size());
             // logger.info("storage nodes:" + storage.nodes() + " vs. graph nodes:" + storage.getGraph().nodes());
         } catch (Exception ex)
         {

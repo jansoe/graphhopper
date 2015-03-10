@@ -102,13 +102,8 @@ public class LanduseProcessor implements SpatialMap
         spatialEncoding = new LinearKeyAlgo(latUnits, lonUnits);
         spatialEncoding.setBounds(analyzedArea);
 
-        System.out.println("MaxSize: " + latUnits*lonUnits);
-        System.out.println("Size guess:" + nodes2coord.size()* 250/ gridsize);
-        
         // estimate of necessary hashmap size
         landuseMap.ensureCapacity(Math.min(nodes2coord.size() * 250 / gridsize, latUnits * lonUnits));
-        System.out.println("Initial size: " + landuseMap.capacity());
-        
         finishedConstruction = true;        
     }
 
