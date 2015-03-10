@@ -113,7 +113,9 @@ public class LanduseProcessor implements SpatialMap
     public boolean addPolygon( OSMWay way )
     {
         String usage = way.getTag("landuse");
-        if (usage != null && landuseCases.contains(usage)) 
+        
+        // there are extremly rare cases of simultanious landuse/highway tags, exclude them as no nodeInfo was saved
+        if (usage != null && landuseCases.contains(usage) && !way.hasTag("highway"))
         {
             byte usageKey = (byte) landuseCases.indexOf(usage); 
             TLongList nodes = way.getNodes();
@@ -123,6 +125,7 @@ public class LanduseProcessor implements SpatialMap
             int ix1 = nodes.size()-1;
             for (int ix2=0; ix2<nodes.size(); ix2++)
             {
+
                 TIntArrayList coord1 = nodes2coord.get(nodes.get(ix1));
                 TIntArrayList coord2 = nodes2coord.get(nodes.get(ix2));
                 double lat1 = Helper.intToDegree(coord1.get(0));
