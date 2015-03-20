@@ -17,16 +17,13 @@
  */
 package com.graphhopper.routing.util;
 
-import java.util.HashSet;
-
-import gnu.trove.list.TLongList;
+import com.graphhopper.reader.OSMNode;
+import com.graphhopper.reader.OSMRelation;
+import com.graphhopper.reader.OSMWay;
+import com.graphhopper.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.graphhopper.reader.OSMNode;
-import com.graphhopper.reader.OSMWay;
-import com.graphhopper.reader.OSMRelation;
-import com.graphhopper.util.*;
 import java.util.*;
 
 /**
@@ -34,6 +31,7 @@ import java.util.*;
  * EncodingManager to be usable. If you want the full long to be stored you need to enable this in
  * the GraphHopperStorage.
  * <p/>
+ *
  * @author Peter Karich
  * @author Nop
  * @see EncodingManager
@@ -73,20 +71,20 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     // http://wiki.openstreetmap.org/wiki/Mapfeatures#Barrier
     protected final HashSet<String> absoluteBarriers = new HashSet<String>(5);
     protected final HashSet<String> potentialBarriers = new HashSet<String>(5);
-    
+
     private boolean blockByDefault = true;
     private boolean blockFords = true;
     protected final int speedBits;
     protected final double speedFactor;
 
-    protected final HashMap<String,Integer> landuseSpeed = new HashMap<String, Integer>(5);
+    protected final HashMap<String, Integer> landuseSpeed = new HashMap<String, Integer>(5);
 
     /**
-     * @param speedBits specify the number of bits used for speed
-     * @param speedFactor specify the factor to multiple the stored value (can be used to increase
-     * or decrease accuracy of speed value)
+     * @param speedBits    specify the number of bits used for speed
+     * @param speedFactor  specify the factor to multiple the stored value (can be used to increase
+     *                     or decrease accuracy of speed value)
      * @param maxTurnCosts specify the maximum value used for turn costs, if this value is reached a
-     * turn is forbidden and results in costs of positive infinity.
+     *                     turn is forbidden and results in costs of positive infinity.
      */
     protected AbstractFlagEncoder( int speedBits, double speedFactor, int maxTurnCosts )
     {
@@ -132,7 +130,8 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
     /**
      * Defines the bits for the node flags, which are currently used for barriers only.
-     * <p>
+     * <p/>
+     *
      * @return incremented shift value pointing behind the last used bit
      */
     public int defineNodeBits( int index, int shift )
@@ -143,6 +142,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     /**
      * Defines bits used for edge flags used for access, speed etc.
      * <p/>
+     *
      * @param index
      * @param shift bit offset for the first bit used by this encoder
      * @return incremented shift value pointing behind the last used bit
@@ -150,7 +150,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public int defineWayBits( int index, int shift )
     {
         if (forwardBit != 0)
+        {
             throw new IllegalStateException("You must not register a FlagEncoder (" + toString() + ") twice!");
+        }
 
         // define the first 2 speedBits in flags for routing
         forwardBit = 1L << shift;
@@ -170,7 +172,8 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
     /**
      * Defines the bits which are used for relation flags.
-     * <p>
+     * <p/>
+     *
      * @return incremented shift value pointing behind the last used bit
      */
     public int defineRelationBits( int index, int shift )
@@ -189,6 +192,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      * Decide whether a way is routable for a given mode of travel. This skips some ways before
      * handleWayTags is called.
      * <p/>
+     *
      * @return the encoded value to indicate if this encoder allows travel or not.
      */
     public abstract long acceptWay( OSMWay way );
@@ -197,7 +201,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      * Analyze properties of a way and create the routing flags. This method is called in the second
      * parsing step.
      */
-    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags);
+    public abstract long handleWayTags( OSMWay way, long allowed, long relationFlags );
 
 
     /**
@@ -209,32 +213,44 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         // absolute barriers always block
         if (node.hasTag("barrier", absoluteBarriers))
+        {
             return directionBitMask;
+        }
 
         // movable barriers block if they are not marked as passable
         if (node.hasTag("barrier", potentialBarriers))
         {
             boolean locked = false;
             if (node.hasTag("locked", "yes"))
+            {
                 locked = true;
+            }
 
             for (String res : restrictions)
             {
                 if (!locked && node.hasTag(res, intendedValues))
+                {
                     return 0;
+                }
 
                 if (node.hasTag(res, restrictedValues))
+                {
                     return directionBitMask;
+                }
             }
 
             if (blockByDefault)
+            {
                 return directionBitMask;
+            }
         }
 
         if (blockFords
                 && (node.hasTag("highway", "ford") || node.hasTag("ford"))
                 && !node.hasTag(restrictions, intendedValues))
+        {
             return directionBitMask;
+        }
 
         return 0;
     }
@@ -254,7 +270,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         long dir = flags & directionBitMask;
         if (dir == directionBitMask || dir == 0)
+        {
             return flags;
+        }
 
         return flags ^ directionBitMask;
     }
@@ -278,11 +296,15 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public long setSpeed( long flags, double speed )
     {
         if (speed < 0)
+        {
             throw new IllegalArgumentException("Speed cannot be negative: " + speed
                     + ", flags:" + BitUtil.LITTLE.toBitString(flags));
+        }
 
         if (speed > getMaxSpeed())
+        {
             speed = getMaxSpeed();
+        }
         return speedEncoder.setDoubleValue(flags, speed);
     }
 
@@ -291,7 +313,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         double speedVal = speedEncoder.getDoubleValue(flags);
         if (speedVal < 0)
+        {
             throw new IllegalStateException("Speed was negative!? " + speedVal);
+        }
 
         return speedVal;
     }
@@ -328,15 +352,19 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         double maxSpeed = parseSpeed(way.getTag("maxspeed"));
         double fwdSpeed = parseSpeed(way.getTag("maxspeed:forward"));
         if (fwdSpeed >= 0 && (maxSpeed < 0 || fwdSpeed < maxSpeed))
+        {
             maxSpeed = fwdSpeed;
+        }
 
         double backSpeed = parseSpeed(way.getTag("maxspeed:backward"));
         if (backSpeed >= 0 && (maxSpeed < 0 || backSpeed < maxSpeed))
+        {
             maxSpeed = backSpeed;
+        }
 
         return maxSpeed;
     }
-    
+
     public Set<String> getLanduseTags()
     {
         return landuseSpeed.keySet();
@@ -355,14 +383,18 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public boolean equals( Object obj )
     {
         if (obj == null)
+        {
             return false;
+        }
 
         // only rely on the string
         //        if (getClass() != obj.getClass())
         //            return false;
         final AbstractFlagEncoder other = (AbstractFlagEncoder) obj;
         if (this.directionBitMask != other.directionBitMask)
+        {
             return false;
+        }
 
         return this.toString().equals(other.toString());
     }
@@ -373,7 +405,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected static double parseSpeed( String str )
     {
         if (Helper.isEmpty(str))
+        {
             return -1;
+        }
 
         try
         {
@@ -419,12 +453,15 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      * This method parses a string ala "00:00" (hours and minutes) or "0:00:00" (days, hours and
      * minutes).
      * <p/>
+     *
      * @return duration value in minutes
      */
     protected static int parseDuration( String str )
     {
         if (str == null)
+        {
             return 0;
+        }
 
         try
         {
@@ -432,7 +469,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
             // because P1M != PT1M but there are wrong edits in OSM! e.g. http://www.openstreetmap.org/way/24791405
             // http://wiki.openstreetmap.org/wiki/Key:duration
             if (str.startsWith("P"))
+            {
                 return 0;
+            }
 
             int index = str.indexOf(":");
             if (index > 0)
@@ -480,6 +519,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         // to hours
         double durationInHours = parseDuration(way.getTag("duration")) / 60d;
         if (durationInHours > 0)
+        {
             try
             {
                 Number estimatedLength = way.getTag("estimated_distance", null);
@@ -491,12 +531,15 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
                     // and set both speed to the same value. Factor 1.4 slower because of waiting time!
                     shortTripsSpeed = Math.round(val / durationInHours / 1.4);
                     if (shortTripsSpeed > getMaxSpeed())
+                    {
                         shortTripsSpeed = getMaxSpeed();
+                    }
                     longTripsSpeed = shortTripsSpeed;
                 }
             } catch (Exception ex)
             {
             }
+        }
 
         if (durationInHours == 0)
         {
@@ -547,16 +590,19 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
     /**
      * Defines the bits reserved for storing turn restriction and turn cost
-     * <p>
+     * <p/>
+     *
      * @param shift bit offset for the first bit used by this encoder
      * @return incremented shift value pointing behind the last used bit
      */
     public int defineTurnBits( int index, int shift )
     {
         if (maxTurnCosts == 0)
+        {
             return shift;
+        }
 
-        // optimization for turn restrictions only 
+        // optimization for turn restrictions only
         else if (maxTurnCosts == 1)
         {
             turnRestrictionBit = 1L << shift;
@@ -583,10 +629,12 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public boolean isTurnRestricted( long flags )
     {
         if (maxTurnCosts == 0)
+        {
             return false;
-
-        else if (maxTurnCosts == 1)
+        } else if (maxTurnCosts == 1)
+        {
             return (flags & turnRestrictionBit) != 0;
+        }
 
         return turnCostEncoder.getValue(flags) == maxTurnCosts;
     }
@@ -595,14 +643,18 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public double getTurnCost( long flags )
     {
         if (maxTurnCosts == 0)
+        {
             return 0;
-
-        else if (maxTurnCosts == 1)
+        } else if (maxTurnCosts == 1)
+        {
             return ((flags & turnRestrictionBit) == 0) ? 0 : Double.POSITIVE_INFINITY;
+        }
 
         long cost = turnCostEncoder.getValue(flags);
         if (cost == maxTurnCosts)
+        {
             return Double.POSITIVE_INFINITY;
+        }
 
         return cost;
     }
@@ -611,12 +663,14 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public long getTurnFlags( boolean restricted, double costs )
     {
         if (maxTurnCosts == 0)
+        {
             return 0;
-
-        else if (maxTurnCosts == 1)
+        } else if (maxTurnCosts == 1)
         {
             if (costs != 0)
+            {
                 throw new IllegalArgumentException("Only restrictions are supported");
+            }
 
             return restricted ? turnRestrictionBit : 0;
         }
@@ -624,18 +678,26 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         if (restricted)
         {
             if (costs != 0 || Double.isInfinite(costs))
+            {
                 throw new IllegalArgumentException("Restricted turn can only have infinite costs (or use 0)");
+            }
         } else
         {
             if (costs >= maxTurnCosts)
+            {
                 throw new IllegalArgumentException("Cost is too high. Or specifiy restricted == true");
+            }
         }
 
         if (costs < 0)
+        {
             throw new IllegalArgumentException("Turn costs cannot be negative");
+        }
 
         if (costs >= maxTurnCosts || restricted)
+        {
             costs = maxTurnCosts;
+        }
         return turnCostEncoder.setValue(0L, (int) costs);
     }
 
@@ -721,7 +783,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         String val = getStr(str, key);
         if (val.isEmpty())
+        {
             return defaultD;
+        }
         return Double.parseDouble(val);
     }
 
@@ -729,7 +793,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         String val = getStr(str, key);
         if (val.isEmpty())
+        {
             return defaultL;
+        }
         return Long.parseLong(val);
     }
 
@@ -737,7 +803,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         String val = getStr(str, key);
         if (val.isEmpty())
+        {
             return defaultB;
+        }
         return Boolean.parseBoolean(val);
     }
 
@@ -749,12 +817,16 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
             s = s.trim().toLowerCase();
             int index = s.indexOf("=");
             if (index < 0)
+            {
                 continue;
+            }
 
             String field = s.substring(0, index);
             String valueStr = s.substring(index + 1);
             if (key.equals(field))
+            {
                 return valueStr;
+            }
         }
         return "";
     }
@@ -769,12 +841,14 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         if (maxSpeed >= 0)
         {
             if (force || maxSpeed < speed)
+            {
                 return maxSpeed * 0.9;
-        } 
+            }
+        }
         return speed;
     }
 
-   
+
     protected String getPropertiesString()
     {
         return "speedFactor=" + speedFactor + "|speedBits=" + speedBits + "|turnCosts=" + (maxTurnCosts > 0);
@@ -784,7 +858,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public boolean supports( Class<?> feature )
     {
         if (TurnWeighting.class.isAssignableFrom(feature))
+        {
             return maxTurnCosts > 0;
+        }
 
         return false;
     }

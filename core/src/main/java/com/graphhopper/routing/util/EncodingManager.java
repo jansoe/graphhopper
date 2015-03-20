@@ -17,25 +17,22 @@
  */
 package com.graphhopper.routing.util;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.graphhopper.reader.OSMNode;
 import com.graphhopper.reader.OSMRelation;
 import com.graphhopper.reader.OSMWay;
 import com.graphhopper.storage.Directory;
 import com.graphhopper.storage.RAMDirectory;
 import com.graphhopper.storage.StorableProperties;
-import com.graphhopper.util.BitUtil;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.Helper;
+
 import java.util.*;
 
 /**
  * Manager class to register encoder, assign their flag values and check objects with all encoders
  * during parsing.
  * <p/>
+ *
  * @author Peter Karich
  * @author Nop
  */
@@ -64,6 +61,7 @@ public class EncodingManager
      * CAR, FOOT and BIKE (ignoring the case). Custom encoders can be specified by giving a full
      * class name e.g. "car:com.graphhopper.myproject.MyCarEncoder"
      * <p/>
+     *
      * @param flagEncodersStr comma delimited list of encoders. The order does not matter.
      */
     public EncodingManager( String flagEncodersStr )
@@ -79,6 +77,7 @@ public class EncodingManager
     /**
      * Instantiate manager with the given list of encoders.
      * <p/>
+     *
      * @param flagEncoders comma delimited list of encoders. The order does not matter.
      */
     public EncodingManager( FlagEncoder... flagEncoders )
@@ -89,6 +88,7 @@ public class EncodingManager
     /**
      * Instantiate manager with the given list of encoders.
      * <p/>
+     *
      * @param flagEncoders comma delimited list of encoders. The order does not matter.
      */
     public EncodingManager( List<? extends FlagEncoder> flagEncoders )
@@ -99,7 +99,9 @@ public class EncodingManager
     public EncodingManager( List<? extends FlagEncoder> flagEncoders, int bytesForEdgeFlags )
     {
         if (bytesForEdgeFlags != 4 && bytesForEdgeFlags != 8)
+        {
             throw new IllegalStateException("For 'edge flags' currently only 4 or 8 bytes supported");
+        }
 
         this.bitsForEdgeFlags = bytesForEdgeFlags * 8;
         for (FlagEncoder flagEncoder : flagEncoders)
@@ -108,7 +110,9 @@ public class EncodingManager
         }
 
         if (edgeEncoders.isEmpty())
+        {
             throw new IllegalStateException("No vehicles found");
+        }
     }
 
     public int getBytesForFlags()
@@ -119,7 +123,9 @@ public class EncodingManager
     static List<FlagEncoder> parseEncoderString( String encoderList )
     {
         if (encoderList.contains(":"))
+        {
             throw new IllegalArgumentException("EncodingManager does no longer use reflection instantiate encoders directly.");
+        }
 
         String[] entries = encoderList.split(",");
         List<FlagEncoder> resultEncoders = new ArrayList<FlagEncoder>();
@@ -128,7 +134,9 @@ public class EncodingManager
         {
             entry = entry.trim().toLowerCase();
             if (entry.isEmpty())
+            {
                 continue;
+            }
 
             String entryVal = "";
             if (entry.contains("|"))
@@ -139,28 +147,30 @@ public class EncodingManager
 
             AbstractFlagEncoder fe;
             if (entry.equals(CAR))
+            {
                 fe = new CarFlagEncoder(entryVal);
-
-            else if (entry.equals(BIKE))
+            } else if (entry.equals(BIKE))
+            {
                 fe = new BikeFlagEncoder(entryVal);
-
-            else if (entry.equals(BIKE2))
+            } else if (entry.equals(BIKE2))
+            {
                 fe = new Bike2WeightFlagEncoder(entryVal);
-
-            else if (entry.equals(RACINGBIKE))
+            } else if (entry.equals(RACINGBIKE))
+            {
                 fe = new RacingBikeFlagEncoder(entryVal);
-
-            else if (entry.equals(MOUNTAINBIKE))
+            } else if (entry.equals(MOUNTAINBIKE))
+            {
                 fe = new MountainBikeFlagEncoder(entryVal);
-
-            else if (entry.equals(FOOT))
+            } else if (entry.equals(FOOT))
+            {
                 fe = new FootFlagEncoder(entryVal);
-
-            else if (entry.equals(MOTORCYCLE))
+            } else if (entry.equals(MOTORCYCLE))
+            {
                 fe = new MotorcycleFlagEncoder(entryVal);
-
-            else
+            } else
+            {
                 throw new IllegalArgumentException("entry in encoder list not supported " + entry);
+            }
 
             resultEncoders.add(fe);
         }
@@ -175,26 +185,34 @@ public class EncodingManager
         int encoderCount = edgeEncoders.size();
         int usedBits = encoder.defineNodeBits(encoderCount, nextNodeBit);
         if (usedBits > bitsForEdgeFlags)
+        {
             throw new IllegalArgumentException(String.format(ERR, bitsForEdgeFlags, "node"));
+        }
         encoder.setNodeBitMask(usedBits - nextNodeBit, nextNodeBit);
         nextNodeBit = usedBits;
 
         usedBits = encoder.defineWayBits(encoderCount, nextWayBit);
         if (usedBits > bitsForEdgeFlags)
+        {
             throw new IllegalArgumentException(String.format(ERR, bitsForEdgeFlags, "way") + WAY_ERR);
+        }
         encoder.setWayBitMask(usedBits - nextWayBit, nextWayBit);
         nextWayBit = usedBits;
 
         usedBits = encoder.defineRelationBits(encoderCount, nextRelBit);
         if (usedBits > bitsForEdgeFlags)
+        {
             throw new IllegalArgumentException(String.format(ERR, bitsForEdgeFlags, "relation"));
+        }
         encoder.setRelBitMask(usedBits - nextRelBit, nextRelBit);
         nextRelBit = usedBits;
 
         // turn flag bits are independent from edge encoder bits
         usedBits = encoder.defineTurnBits(encoderCount, nextTurnBit);
         if (usedBits > bitsForTurnFlags)
+        {
             throw new IllegalArgumentException(String.format(ERR, bitsForEdgeFlags, "turn"));
+        }
         nextTurnBit = usedBits;
 
         edgeEncoders.add(encoder);
@@ -218,10 +236,14 @@ public class EncodingManager
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             if (name.equalsIgnoreCase(encoder.toString()))
+            {
                 return encoder;
+            }
         }
         if (throwExc)
+        {
             throw new IllegalArgumentException("Encoder for " + name + " not found. Existing: " + toDetailsString());
+        }
         return null;
     }
 
@@ -254,10 +276,11 @@ public class EncodingManager
      * Processes way properties of different kind to determine speed and direction. Properties are
      * directly encoded in 8 bytes.
      * <p/>
+     *
      * @param relationFlags The preprocessed relation flags is used to influence the way properties.
      * @return the encoded flags
      */
-    public long handleWayTags( OSMWay way, long includeWay, long relationFlags)
+    public long handleWayTags( OSMWay way, long includeWay, long relationFlags )
     {
         long flags = 0;
         for (AbstractFlagEncoder encoder : edgeEncoders)
@@ -275,7 +298,9 @@ public class EncodingManager
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             if (str.length() > 0)
+            {
                 str.append(",");
+            }
 
             str.append(encoder.toString());
         }
@@ -289,7 +314,9 @@ public class EncodingManager
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             if (str.length() > 0)
+            {
                 str.append(",");
+            }
 
             str.append(encoder.toString());
             str.append("|");
@@ -335,10 +362,14 @@ public class EncodingManager
     public boolean equals( Object obj )
     {
         if (obj == null)
+        {
             return false;
+        }
 
         if (getClass() != obj.getClass())
+        {
             return false;
+        }
 
         final EncodingManager other = (EncodingManager) obj;
         if (this.edgeEncoders != other.edgeEncoders && (this.edgeEncoders == null || !this.edgeEncoders.equals(other.edgeEncoders)))
@@ -381,9 +412,12 @@ public class EncodingManager
             if (!Helper.isEmpty(refName))
             {
                 if (Helper.isEmpty(name))
+                {
                     name = refName;
-                else
+                } else
+                {
                     name += ", " + refName;
+                }
             }
 
             edge.setName(name);
@@ -408,7 +442,9 @@ public class EncodingManager
     static String fixWayName( String str )
     {
         if (str == null)
+        {
             return "";
+        }
         return str.replaceAll(";[ ]*", ", ");
     }
 
@@ -417,7 +453,9 @@ public class EncodingManager
         for (FlagEncoder encoder : edgeEncoders)
         {
             if (encoder.supports(TurnWeighting.class))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -431,27 +469,33 @@ public class EncodingManager
         Directory dir = new RAMDirectory(ghLoc, true);
         StorableProperties properties = new StorableProperties(dir);
         if (!properties.loadExisting())
+        {
             throw new IllegalStateException("Cannot load properties to fetch EncodingManager configuration at: "
                     + dir.getLocation());
+        }
 
         // check encoding for compatiblity
         properties.checkVersions(false);
         String acceptStr = properties.get("graph.flagEncoders");
 
         if (acceptStr.isEmpty())
+        {
             throw new IllegalStateException("EncodingManager was not configured. And no one was found in the graph: "
                     + dir.getLocation());
+        }
 
         int bytesForFlags = 4;
         if ("8".equals(properties.get("graph.bytesForFlags")))
+        {
             bytesForFlags = 8;
+        }
         return new EncodingManager(acceptStr, bytesForFlags);
     }
 
     /**
      * @return all landuse tags, used by any of the encoders.
      */
-    
+
     public ArrayList<String> getLanduseTags()
     {
         // use LinkedHashSet to have deterministic ordering
@@ -459,7 +503,7 @@ public class EncodingManager
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             landuseTags.addAll(encoder.getLanduseTags());
-            
+
         }
         return new ArrayList<String>(landuseTags);
     }

@@ -23,6 +23,7 @@ import com.graphhopper.util.shapes.GHPoint;
 /**
  * This class maps lat,lon to a (tile)number unlike SpatialKeyAlgo.
  * <p/>
+ *
  * @author Peter Karich
  */
 // A 4*3 precision linear key will look like
@@ -64,7 +65,7 @@ public class LinearKeyAlgo implements KeyAlgo
         setBounds(bounds.minLon, bounds.maxLon, bounds.minLat, bounds.maxLat);
         return this;
     }
-        
+
     protected void setWorldBounds()
     {
         setBounds(-180, 180, -90, 90);
@@ -79,6 +80,7 @@ public class LinearKeyAlgo implements KeyAlgo
     /**
      * Take latitude and longitude as input.
      * <p/>
+     *
      * @return the linear key
      */
     @Override
@@ -90,11 +92,12 @@ public class LinearKeyAlgo implements KeyAlgo
         long latIndex = (long) ((lat - bounds.minLat) / latDelta * C);
         long lonIndex = (long) ((lon - bounds.minLon) / lonDelta * C);
         return latIndex * lonUnits + lonIndex;
-    }    
+    }
 
     /**
      * This method returns latitude and longitude via latLon - calculated from specified linearKey
      * <p/>
+     *
      * @param linearKey is the input
      */
     @Override
@@ -107,16 +110,17 @@ public class LinearKeyAlgo implements KeyAlgo
     }
 
     /**
-     * This method discretizes a latitude value to the corresponding key value, 
+     * This method discretizes a latitude value to the corresponding key value,
      * i.e. performs an encoding and decoding of the latitude value
+     *
      * @param lat latitude value
      * @return discretized latitude value
      */
-    public double roundLat(double lat)
+    public double roundLat( double lat )
     {
         lat = Math.min(Math.max(lat, bounds.minLat), bounds.maxLat);
         long latIndex = (long) ((lat - bounds.minLat) / latDelta * C);
-        lat = latIndex* latDelta + bounds.minLat + latDelta / 2;
+        lat = latIndex * latDelta + bounds.minLat + latDelta / 2;
         return lat;
     }
 

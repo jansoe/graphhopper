@@ -1,6 +1,5 @@
 package com.graphhopper.util;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -10,7 +9,7 @@ public class ScanLinePolyFillTest
 {
     public HashSet<List<Double>> map = new HashSet<List<Double>>();
 
-    public SpatialMap simpleMap = new SpatialMap() 
+    public SpatialPixelMap simpleMap = new SpatialPixelMap()
     {
         @Override
         public double getYStep()

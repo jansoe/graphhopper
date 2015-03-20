@@ -1,24 +1,20 @@
 package com.graphhopper.reader;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.hash.TLongByteHashMap;
 import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.THashSet;
 import gnu.trove.set.hash.TLongHashSet;
 import junit.framework.TestCase;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-public class LanduseProcessorTest extends TestCase {
+public class LanduseProcessorTest extends TestCase
+{
 
     // Fill 2 square polygons with different tags
     @Test
-    public void test2SquareFill() {
+    public void test2SquareFill()
+    {
 
         OSMWay poly;
         LanduseProcessor landuseProcessor = new LanduseProcessor(1100);
@@ -74,7 +70,8 @@ public class LanduseProcessorTest extends TestCase {
 
     // Fill almost square polygons ot test for correct rounding
     @Test
-    public void testSquareFillRound() {
+    public void testSquareFillRound()
+    {
         LanduseProcessor landuseProcessor = new LanduseProcessor(1100);
         ArrayList<String> cases = new ArrayList<String>();
         cases.add("residential");
@@ -102,8 +99,9 @@ public class LanduseProcessorTest extends TestCase {
 
     // Fill a heart polygon
     @Test
-    public void testComplexFill() {
-        
+    public void testComplexFill()
+    {
+
         LanduseProcessor landuseProcessor = new LanduseProcessor(550);
         ArrayList<String> cases = new ArrayList<String>();
         cases.add("residential");
@@ -123,17 +121,17 @@ public class LanduseProcessorTest extends TestCase {
 
         landuseProcessor.initLineFill();
         OSMWay poly = new OSMWay(0);
-        poly.nodes.add(new long[]{0, 1, 2, 3,4,5});
+        poly.nodes.add(new long[]{0, 1, 2, 3, 4, 5});
         poly.setTag("landuse", "residential");
         landuseProcessor.addPolygon(poly);
-        
+
         // each longitude row goes from 20i-20(i+1)
-        TLongSet expectedKeys = new TLongHashSet(Arrays.asList(    23L, 24L,                 29L, 30L,
-                                                               42L, 43L, 44L, 45L,      48L, 49L, 50L, 51L,
-                                                                 63L, 64L, 65L, 66L, 67L, 68L, 69L, 70L,
-                                                                      84L, 85L, 86L, 87L, 88L, 89L,
-                                                                         105L, 106L, 107L, 108L,
-                                                                                126L, 127L                   ));
+        TLongSet expectedKeys = new TLongHashSet(Arrays.asList(23L, 24L, 29L, 30L,
+                42L, 43L, 44L, 45L, 48L, 49L, 50L, 51L,
+                63L, 64L, 65L, 66L, 67L, 68L, 69L, 70L,
+                84L, 85L, 86L, 87L, 88L, 89L,
+                105L, 106L, 107L, 108L,
+                126L, 127L));
         TLongSet actualKeys = landuseProcessor.landuseMap.keySet();
         assertEquals("wrong keys in spatial map", expectedKeys, actualKeys);
         //landuseProcessor.print();

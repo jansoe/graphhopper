@@ -1,21 +1,20 @@
 package com.graphhopper.util;
 
-import com.graphhopper.reader.LanduseProcessor;
-
 import java.util.*;
 
 /**
- * Scan-Line algorithm to fill a complex polygon. 
- * For details see: http://www-lehre.informatik.uni-osnabrueck.de/~cg/2000/skript/4_2_Scan_Line_Verfahren_f_252_r.html
+ * Scan-Line algorithm to fill a complex polygon.
+ * For general consideration see: 
+ * http://www-lehre.informatik.uni-osnabrueck.de/~cg/2000/skript/4_2_Scan_Line_Verfahren_f_252_r.html
  * Basic usage; (1) addEdge (2) finalizeAllEdgesTable (3) doScanLineFill
- * 
+ *
  * @author jansoe
  */
 public class ScanLinePolyFill
 {
-    
+
     private LinkedList<ScanlineEdge> allEdgesTable = new LinkedList<ScanlineEdge>();
-    private TreeSet<ScanlineEdge> activeEdges = new TreeSet<ScanlineEdge>(new Comparator<ScanlineEdge>() 
+    private TreeSet<ScanlineEdge> activeEdges = new TreeSet<ScanlineEdge>(new Comparator<ScanlineEdge>()
     {
         @Override
         public int compare( ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2 )
@@ -32,17 +31,17 @@ public class ScanLinePolyFill
     });
     private boolean allEdgesTableCompleted = false;
     private double globalYmin = Double.MAX_VALUE;
-    private SpatialMap spatialMap;
+    private SpatialPixelMap spatialPixelMap;
     private byte value = 0;
-    
-    public ScanLinePolyFill( SpatialMap spatialMap )
+
+    public ScanLinePolyFill( SpatialPixelMap spatialPixelMap )
     {
-        this.spatialMap = spatialMap;
+        this.spatialPixelMap = spatialPixelMap;
     }
-    
+
     public void setValue( byte value )
     {
-        this.value = value;        
+        this.value = value;
     }
 
     /**
@@ -51,19 +50,19 @@ public class ScanLinePolyFill
     public void addEdge( double x1, double x2, double y1, double y2 )
     {
         double minY, maxY, xAtminY, slopeInverse;
-        double deltaX = x2-x1;
-        double deltaY = y2-y1;
-        
+        double deltaX = x2 - x1;
+        double deltaY = y2 - y1;
+
         int comparisionY = Double.compare(y1, y2);
-        if  (comparisionY != 0) // skip horizontal lines
+        if (comparisionY != 0) // skip horizontal lines
         {
-            if (comparisionY<0)
+            if (comparisionY < 0)
             {
                 minY = y1;
                 xAtminY = x1;
                 maxY = y2;
                 slopeInverse = deltaX / deltaY;
-            } else  
+            } else
             {
                 minY = y2;
                 xAtminY = x2;
@@ -72,11 +71,11 @@ public class ScanLinePolyFill
             }
             ScanlineEdge newEdge = new ScanlineEdge(minY, maxY, xAtminY, slopeInverse);
             allEdgesTable.add(newEdge);
-            if (Double.compare(minY, globalYmin)<0)
+            if (Double.compare(minY, globalYmin) < 0)
             {
                 globalYmin = minY;
             }
-        }     
+        }
     }
 
     /**
@@ -84,10 +83,10 @@ public class ScanLinePolyFill
      */
     public void finalizeAllEdgesTable()
     {
-        Collections.sort(allEdgesTable, new Comparator<ScanlineEdge>() 
+        Collections.sort(allEdgesTable, new Comparator<ScanlineEdge>()
         {
             @Override
-            public int compare(ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2) 
+            public int compare( ScanlineEdge scanlineEdge1, ScanlineEdge scanlineEdge2 )
             {
                 int comparison = Double.compare(scanlineEdge1.minY, scanlineEdge2.minY);
                 if (comparison != 0)
@@ -99,11 +98,11 @@ public class ScanLinePolyFill
                 }
             }
         });
-        allEdgesTableCompleted = true;        
+        allEdgesTableCompleted = true;
     }
 
     /**
-     * performs the scan-line algorithm on finalized (sorted) allEdgesTable 
+     * performs the scan-line algorithm on finalized (sorted) allEdgesTable
      */
     public void doScanlineFill()
     {
@@ -112,7 +111,7 @@ public class ScanLinePolyFill
         {
             throw new IllegalStateException("Start of Line Fill only after allEdgesTable is finalized");
         }
-        double scanlineY = spatialMap.discretizeY(globalYmin);
+        double scanlineY = spatialPixelMap.discretizeY(globalYmin);
         nextEdge = allEdgesTable.pollFirst();
         while (nextEdge != null || !activeEdges.isEmpty())
         {
@@ -127,7 +126,7 @@ public class ScanLinePolyFill
             else
             {
                 singleLineFill(activeEdges, scanlineY);
-                scanlineY += spatialMap.getYStep();
+                scanlineY += spatialPixelMap.getYStep();
                 // update remaining edges
                 Iterator<ScanlineEdge> edgeIter = activeEdges.iterator();
                 while (edgeIter.hasNext())
@@ -151,29 +150,29 @@ public class ScanLinePolyFill
         boolean draw = false;
         double prevY = -Double.MAX_VALUE, prevX = -Double.MAX_VALUE;
 
-        for (ScanlineEdge edge : edges )
+        for (ScanlineEdge edge : edges)
         {
             if (edge.xAtscanlineY > prevX)
             {
                 if (draw)
                 {
-                    spatialMap.fillLine(currentY, prevX, edge.xAtscanlineY, value);
+                    spatialPixelMap.fillLine(currentY, prevX, edge.xAtscanlineY, value);
                 }
                 draw = !draw;
                 prevX = edge.xAtscanlineY;
             } else //both edges are at same X
             {
-                if (((prevY-currentY)*(edge.maxY-currentY))>0)
+                if (((prevY - currentY) * (edge.maxY - currentY)) > 0)
                 {
                     draw = !draw;
                 }
             }
-            
+
         }
     }
 
     // stores relevant data of a polygon edge for scan line algorithm
-    private class ScanlineEdge 
+    private class ScanlineEdge
     {
         private double minY, maxY, x0, xAtscanlineY, slopeInverse;
 
@@ -188,7 +187,7 @@ public class ScanLinePolyFill
         private void updateX2currentY( double currentY )
         {
             double deltaY = currentY - minY;
-            xAtscanlineY = x0 + slopeInverse*deltaY;
+            xAtscanlineY = x0 + slopeInverse * deltaY;
         }
     }
 

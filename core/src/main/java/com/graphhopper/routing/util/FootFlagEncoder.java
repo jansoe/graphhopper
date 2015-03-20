@@ -17,17 +17,17 @@
  */
 package com.graphhopper.routing.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.graphhopper.reader.OSMRelation;
 import com.graphhopper.reader.OSMWay;
-import static com.graphhopper.routing.util.PriorityCode.*;
+
 import java.util.*;
+
+import static com.graphhopper.routing.util.PriorityCode.*;
 
 /**
  * Defines bit layout for pedestrians (speed, access, surface, ...).
- * <p>
+ * <p/>
+ *
  * @author Peter Karich
  * @author Nop
  * @author Karl Hübner
@@ -150,7 +150,8 @@ public class FootFlagEncoder extends AbstractFlagEncoder
 
     /**
      * Foot flag encoder does not provide any turn cost / restrictions
-     * <p>
+     * <p/>
+     *
      * @return <code>false</code>
      */
     @Override
@@ -161,7 +162,8 @@ public class FootFlagEncoder extends AbstractFlagEncoder
 
     /**
      * Foot flag encoder does not provide any turn cost / restrictions
-     * <p>
+     * <p/>
+     *
      * @return 0
      */
     @Override
@@ -179,6 +181,7 @@ public class FootFlagEncoder extends AbstractFlagEncoder
     /**
      * Some ways are okay but not separate for pedestrians.
      * <p/>
+     *
      * @param way
      */
     @Override
@@ -191,7 +194,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
             {
                 String footTag = way.getTag("foot");
                 if (footTag == null || "yes".equals(footTag))
+                {
                     return acceptBit | ferryBit;
+                }
             }
 
             // special case not for all acceptedRailways, only platform
@@ -206,34 +211,50 @@ public class FootFlagEncoder extends AbstractFlagEncoder
         {
             if (!"hiking".equals(sacScale) && !"mountain_hiking".equals(sacScale)
                     && !"demanding_mountain_hiking".equals(sacScale) && !"alpine_hiking".equals(sacScale))
-                // other scales are too dangerous, see http://wiki.openstreetmap.org/wiki/Key:sac_scale
+            // other scales are too dangerous, see http://wiki.openstreetmap.org/wiki/Key:sac_scale
+            {
                 return 0;
+            }
         }
 
         if (way.hasTag("sidewalk", sidewalks))
+        {
             return acceptBit;
+        }
 
         // no need to evaluate ferries or fords - already included here
         if (way.hasTag("foot", intendedValues))
+        {
             return acceptBit;
+        }
 
         if (!allowedHighwayTags.contains(highwayValue))
+        {
             return 0;
+        }
 
         if (way.hasTag("motorroad", "yes"))
+        {
             return 0;
+        }
 
         // do not get our feet wet, "yes" is already included above
         if (isBlockFords() && (way.hasTag("highway", "ford") || way.hasTag("ford")))
+        {
             return 0;
+        }
 
         // check access restrictions
         if (way.hasTag(restrictions, restrictedValues))
+        {
             return 0;
+        }
 
         // do not accept railways (sometimes incorrectly mapped!)
         if (way.hasTag("railway") && !way.hasTag("railway", acceptedRailways))
+        {
             return 0;
+        }
 
         return acceptBit;
     }
@@ -246,7 +267,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
         {
             Integer val = hikingNetworkToCode.get(relation.getTag("network"));
             if (val != null)
+            {
                 code = val;
+            }
         } else if (relation.hasTag("route", "ferry"))
         {
             code = PriorityCode.AVOID_IF_POSSIBLE.getValue();
@@ -254,15 +277,19 @@ public class FootFlagEncoder extends AbstractFlagEncoder
 
         int oldCode = (int) relationCodeEncoder.getValue(oldRelationFlags);
         if (oldCode < code)
+        {
             return relationCodeEncoder.setValue(0, code);
+        }
         return oldRelationFlags;
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags )
     {
         if (!isAccept(allowed))
+        {
             return 0;
+        }
 
         long encoded;
         if (!isFerry(allowed))
@@ -271,9 +298,12 @@ public class FootFlagEncoder extends AbstractFlagEncoder
             if (sacScale != null)
             {
                 if ("hiking".equals(sacScale))
+                {
                     encoded = speedEncoder.setDoubleValue(0, MEAN_SPEED);
-                else
+                } else
+                {
                     encoded = speedEncoder.setDoubleValue(0, SLOW_SPEED);
+                }
             } else
             {
                 encoded = speedEncoder.setDoubleValue(0, MEAN_SPEED);
@@ -282,7 +312,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
 
             int priorityFromRelation = 0;
             if (relationFlags != 0)
+            {
                 priorityFromRelation = (int) relationCodeEncoder.getValue(relationFlags);
+            }
 
             encoded = setLong(encoded, PriorityWeighting.KEY, handlePriority(way, priorityFromRelation));
 
@@ -309,7 +341,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
             case PriorityWeighting.KEY:
                 double prio = preferWayEncoder.getValue(flags);
                 if (prio == 0)
+                {
                     return (double) UNCHANGED.getValue() / BEST.getValue();
+                }
 
                 return prio / BEST.getValue();
             default:
@@ -345,9 +379,12 @@ public class FootFlagEncoder extends AbstractFlagEncoder
     {
         TreeMap<Double, Integer> weightToPrioMap = new TreeMap<Double, Integer>();
         if (priorityFromRelation == 0)
+        {
             weightToPrioMap.put(0d, UNCHANGED.getValue());
-        else
+        } else
+        {
             weightToPrioMap.put(110d, priorityFromRelation);
+        }
 
         collect(way, weightToPrioMap);
 
@@ -357,20 +394,24 @@ public class FootFlagEncoder extends AbstractFlagEncoder
 
     /**
      * @param weightToPrioMap associate a weight with every priority. This sorted map allows
-     * subclasses to 'insert' more important priorities as well as overwrite determined priorities.
+     *                        subclasses to 'insert' more important priorities as well as overwrite determined priorities.
      */
     void collect( OSMWay way, TreeMap<Double, Integer> weightToPrioMap )
     {
         String highway = way.getTag("highway");
         if (way.hasTag("foot", "designated"))
+        {
             weightToPrioMap.put(100d, PREFER.getValue());
+        }
 
         double maxSpeed = getMaxSpeed(way);
         if (safeHighwayTags.contains(highway) || maxSpeed > 0 && maxSpeed <= 20)
         {
             weightToPrioMap.put(40d, PREFER.getValue());
             if (way.hasTag("tunnel", intendedValues))
+            {
                 weightToPrioMap.put(40d, UNCHANGED.getValue());
+            }
         }
 
         if (way.hasTag("bicycle", "official") || way.hasTag("bicycle", "designated"))
@@ -388,7 +429,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
             weightToPrioMap.put(50d, REACH_DEST.getValue());
 
             if (way.hasTag("tunnel", intendedValues))
+            {
                 weightToPrioMap.put(50d, AVOID_AT_ALL_COSTS.getValue());
+            }
         }
     }
 
@@ -396,7 +439,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder
     public boolean supports( Class<?> feature )
     {
         if (super.supports(feature))
+        {
             return true;
+        }
 
         return PriorityWeighting.class.isAssignableFrom(feature);
     }

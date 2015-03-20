@@ -17,25 +17,22 @@
  */
 package com.graphhopper.routing.util;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.graphhopper.reader.OSMRelation;
 import com.graphhopper.reader.OSMWay;
 import com.graphhopper.util.Helper;
+
 import java.util.*;
 
 /**
  * Defines bit layout for cars. (speed, access, ferries, ...)
- * <p>
+ * <p/>
+ *
  * @author Peter Karich
  * @author Nop
  */
 public class CarFlagEncoder extends AbstractFlagEncoder
 {
-    protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<String, Integer>();    
+    protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<String, Integer>();
     protected final Set<String> badSurfaceSpeedMap = new HashSet<String>();
     /**
      * A map which associates string to speed. Get some impression:
@@ -126,7 +123,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         defaultSpeedMap.put("road", 20);
         // forestry stuff
         defaultSpeedMap.put("track", 15);
-        
+
         //
         landuseSpeed.put("residential", 40);
         landuseSpeed.put("commercial", 40);
@@ -151,7 +148,9 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         String highwayValue = way.getTag("highway");
         Integer speed = defaultSpeedMap.get(highwayValue);
         if (speed == null)
+        {
             throw new IllegalStateException(toString() + ", no speed found for: " + highwayValue + ", tags: " + way);
+        }
 
         if (highwayValue.equals("track"))
         {
@@ -160,13 +159,15 @@ public class CarFlagEncoder extends AbstractFlagEncoder
             {
                 Integer tInt = trackTypeSpeedMap.get(tt);
                 if (tInt != null)
+                {
                     speed = tInt;
+                }
             }
         }
 
         return speed;
     }
-    
+
     protected double applyAreaSpeed( double oldSpeed, OSMWay way )
     {
         double speed = oldSpeed;
@@ -180,7 +181,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
                     continue;
                 }
                 double areaSpeed = landuseSpeed.get(landuse);
-                if (speed > areaSpeed) 
+                if (speed > areaSpeed)
                 {
                     speed = areaSpeed;
                 }
@@ -199,10 +200,14 @@ public class CarFlagEncoder extends AbstractFlagEncoder
             {
                 String motorcarTag = way.getTag("motorcar");
                 if (motorcarTag == null)
+                {
                     motorcarTag = way.getTag("motor_vehicle");
+                }
 
                 if (motorcarTag == null && !way.hasTag("foot") && !way.hasTag("bicycle") || "yes".equals(motorcarTag))
+                {
                     return acceptBit | ferryBit;
+                }
             }
             return 0;
         }
@@ -211,27 +216,39 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             String tt = way.getTag("tracktype");
             if (tt != null && !tt.equals("grade1") && !tt.equals("grade2") && !tt.equals("grade3"))
+            {
                 return 0;
+            }
         }
 
         if (!defaultSpeedMap.containsKey(highwayValue))
+        {
             return 0;
+        }
 
         if (way.hasTag("impassable", "yes") || way.hasTag("status", "impassable"))
+        {
             return 0;
+        }
 
         // do not drive street cars into fords
         boolean carsAllowed = way.hasTag(restrictions, intendedValues);
         if (isBlockFords() && ("ford".equals(highwayValue) || way.hasTag("ford")) && !carsAllowed)
+        {
             return 0;
+        }
 
         // check access restrictions
         if (way.hasTag(restrictions, restrictedValues) && !carsAllowed)
+        {
             return 0;
+        }
 
         // do not drive cars over railways (sometimes incorrectly mapped!)
         if (way.hasTag("railway") && !way.hasTag("railway", acceptedRailways))
+        {
             return 0;
+        }
 
         return acceptBit;
     }
@@ -243,10 +260,12 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     }
 
     @Override
-    public long handleWayTags( OSMWay way, long allowed, long relationFlags)
+    public long handleWayTags( OSMWay way, long allowed, long relationFlags )
     {
         if (!isAccept(allowed))
+        {
             return 0;
+        }
 
         long encoded;
         if (!isFerry(allowed))
@@ -260,13 +279,17 @@ public class CarFlagEncoder extends AbstractFlagEncoder
 
             // limit speed to max 30 km/h if bad surface
             if (speed > 30 && way.hasTag("surface", badSurfaceSpeedMap))
+            {
                 speed = 30;
+            }
 
             encoded = setSpeed(0, speed);
 
             boolean isRoundabout = way.hasTag("junction", "roundabout");
             if (isRoundabout)
+            {
                 encoded = setBool(encoded, K_ROUNDABOUT, true);
+            }
 
             boolean isOneway = way.hasTag("oneway", oneways)
                     || way.hasTag("vehicle:backward")
@@ -280,11 +303,16 @@ public class CarFlagEncoder extends AbstractFlagEncoder
                         || way.hasTag("vehicle:forward", "no")
                         || way.hasTag("motor_vehicle:forward", "no");
                 if (isBackward)
+                {
                     encoded |= backwardBit;
-                else
+                } else
+                {
                     encoded |= forwardBit;
+                }
             } else
+            {
                 encoded |= directionBitMask;
+            }
 
         } else
         {
@@ -309,10 +337,14 @@ public class CarFlagEncoder extends AbstractFlagEncoder
                 for (String d : destination.split(";"))
                 {
                     if (d.trim().isEmpty())
+                    {
                         continue;
+                    }
 
                     if (counter > 0)
+                    {
                         str += ", ";
+                    }
 
                     str += d.trim();
                     counter++;
@@ -320,12 +352,17 @@ public class CarFlagEncoder extends AbstractFlagEncoder
             }
         }
         if (str.isEmpty())
+        {
             return str;
+        }
         // I18N
         if (str.contains(","))
+        {
             return "destinations: " + str;
-        else
+        } else
+        {
             return "destination: " + str;
+        }
     }
 
     @Override
