@@ -65,6 +65,11 @@ public class LanduseProcessor implements SpatialPixelMap
             }
         }
     }
+    
+    public int getMaxTiles()
+    {
+        return latUnits*lonUnits;
+    }
 
     /**
      * Assigns each node lat, lon values
