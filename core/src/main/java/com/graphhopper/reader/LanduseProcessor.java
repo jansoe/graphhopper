@@ -109,7 +109,13 @@ public class LanduseProcessor implements SpatialPixelMap
         spatialEncoding.setBounds(analyzedArea);
 
         // estimate of necessary hashmap size
-        landuseMap.ensureCapacity(Math.min(nodes2coord.size() * 250 / gridsize, latUnits * lonUnits));
+        
+        System.out.println(nodes2coord.size());
+        System.out.println(gridsize);
+        System.out.println(nodes2coord.size() * 250L / gridsize);
+        System.out.println(nodes2coord.size() * 250L / gridsize);
+        
+        landuseMap.ensureCapacity(Math.min((int) (nodes2coord.size() * 250L / gridsize), latUnits * lonUnits));
         finishedConstruction = true;
     }
 
