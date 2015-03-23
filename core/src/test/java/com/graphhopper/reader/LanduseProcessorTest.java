@@ -40,7 +40,7 @@ public class LanduseProcessorTest extends TestCase
         landuseProcessor.addNodeInfo(8, 49.99, 9.98);
         landuseProcessor.addNodeInfo(9, 50.05, 10.06);
 
-        landuseProcessor.initLineFill();
+        landuseProcessor.initMapFill();
         poly = new OSMWay(0);
         poly.nodes.add(new long[]{0, 1, 2, 3});
         poly.setTag("landuse", "residential");
@@ -86,7 +86,7 @@ public class LanduseProcessorTest extends TestCase
         landuseProcessor.addNodeInfo(4, 50.00, 10.00);
         landuseProcessor.addNodeInfo(5, 50.05, 10.10);
 
-        landuseProcessor.initLineFill();
+        landuseProcessor.initMapFill();
         OSMWay poly = new OSMWay(0);
         poly.nodes.add(new long[]{0, 1, 2, 3});
         poly.setTag("landuse", "residential");
@@ -119,7 +119,7 @@ public class LanduseProcessorTest extends TestCase
         landuseProcessor.addNodeInfo(6, 50.0025, 10.00);
         landuseProcessor.addNodeInfo(7, 50.0425, 10.10);
 
-        landuseProcessor.initLineFill();
+        landuseProcessor.initMapFill();
         OSMWay poly = new OSMWay(0);
         poly.nodes.add(new long[]{0, 1, 2, 3, 4, 5});
         poly.setTag("landuse", "residential");

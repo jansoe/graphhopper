@@ -329,7 +329,7 @@ public class OSMReader implements DataReader
                     if (wayStart)
                     {
                         wayStart = false;
-                        areaProcessor.initLineFill();
+                        areaProcessor.initMapFill();
                         logger.info("Landuse max tiles: " + nf(areaProcessor.getMaxTiles()));
                         logger.info("Landuse map initial tile capacity: " + nf(areaProcessor.landuseMap.capacity()));
 
@@ -350,6 +350,7 @@ public class OSMReader implements DataReader
         } finally
         {
             Helper.close(in);
+            areaProcessor.finishMapFill();
         }
         logger.info("Created landuse map, #tiles:" + nf(areaProcessor.landuseMap.size()) + ", " + Helper.getMemInfo());
     }

@@ -17,7 +17,13 @@ import java.util.ArrayList;
  * Creats a spatial map of landuse tags, i.e. every spatial grid cell is assigned a landuse key.
  * Gridsize determines fineness of spatial grid in 110000/gridsize degree, such that gridsize
  * roughly resembles fineness in meter.
- * General usage: (1) collectLanduseNodes (2) collectNodeData (3) initLineFill (4) addPolygon
+ * General usage: 
+ * (1) collectLanduseNodes -> create a list of nodes necessary to create landuse borders
+ * (2) collectNodeData -> collect lat, long values for nodes 
+ * (3) initMapFill -> init DataStructures
+ * (4) addPolygon -> add Landuse Polygons
+ * (5) finishMapFill -> free memory 
+ * (6) getUsage -> query LanduseMap
  * <p/>
  * A pixel is filled if both the y coordinate crosses the horizontal midline of that pixel and
  * the x coordinate the vertical midline
@@ -34,7 +40,7 @@ public class LanduseProcessor implements SpatialPixelMap
     private BBox analyzedArea = BBox.createInverse(false);
     private LinearKeyAlgo spatialEncoding;
     private int gridsize;
-    private boolean finishedConstruction = false;
+    private boolean finishedInit = false;
 
     public LanduseProcessor( int gridsizeInMeter )
     {
@@ -43,7 +49,7 @@ public class LanduseProcessor implements SpatialPixelMap
 
     public void setLanduseCases( ArrayList<String> landuseCases )
     {
-        if (finishedConstruction)
+        if (finishedInit)
         {
             throw new IllegalStateException("Can't modify finished landuse map");
         }
@@ -101,7 +107,7 @@ public class LanduseProcessor implements SpatialPixelMap
     /**
      * Initializes spatial map, i.e. spatial keying according to gridsize and a key-value map with approximate size
      */
-    public void initLineFill()
+    public void initMapFill()
     {
         latUnits = (int) Math.round((Math.abs(analyzedArea.maxLat - analyzedArea.minLat) * 110000 / gridsize));
         lonUnits = (int) Math.round((Math.abs(analyzedArea.maxLon - analyzedArea.minLon) * 110000 / gridsize));
@@ -109,16 +115,16 @@ public class LanduseProcessor implements SpatialPixelMap
         spatialEncoding.setBounds(analyzedArea);
 
         // estimate of necessary hashmap size
-        
-        System.out.println(nodes2coord.size());
-        System.out.println(gridsize);
-        System.out.println(nodes2coord.size() * 250L / gridsize);
-        System.out.println(nodes2coord.size() * 250L / gridsize);
-        
         landuseMap.ensureCapacity(Math.min((int) (nodes2coord.size() * 250L / gridsize), latUnits * lonUnits));
-        finishedConstruction = true;
+        finishedInit = true;
     }
 
+    public void finishMapFill()
+    {
+        nodes2coord = null;
+        landuseMap.trimToSize();
+    }
+    
     /**
      * Adds filled landuse polygon (OSM way) in spatial map
      */
@@ -189,7 +195,7 @@ public class LanduseProcessor implements SpatialPixelMap
 
     public String getUsage( double lat, double lon )
     {
-        if (!finishedConstruction)
+        if (!finishedInit)
         {
             throw new IllegalStateException("Initialization has to be finished before querying landuse map");
         }
