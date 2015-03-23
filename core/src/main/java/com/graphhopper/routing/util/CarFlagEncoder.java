@@ -108,12 +108,25 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         // linking bigger town
         defaultSpeedMap.put("primary", 65);
         defaultSpeedMap.put("primary_link", 60);
+        landuseSpeed.put("primary:residential", 45);
+        landuseSpeed.put("primary:commercial", 45);
+        landuseSpeed.put("primary:retail", 45);
+        landuseSpeed.put("primary:industrial", 45);
         // linking towns + villages
         defaultSpeedMap.put("secondary", 60);
         defaultSpeedMap.put("secondary_link", 50);
+        landuseSpeed.put("secondary:residential", 40);
+        landuseSpeed.put("secondary:commercial", 40);
+        landuseSpeed.put("secondary:retail", 40);
+        landuseSpeed.put("secondary:industrial", 40);
         // streets without middle line separation
         defaultSpeedMap.put("tertiary", 50);
         defaultSpeedMap.put("tertiary_link", 40);
+        landuseSpeed.put("tertiary:residential", 35);
+        landuseSpeed.put("tertiary:commercial", 35);
+        landuseSpeed.put("tertiary:retail", 35);
+        landuseSpeed.put("tertiary:industrial", 35);
+        
         defaultSpeedMap.put("unclassified", 30);
         defaultSpeedMap.put("residential", 30);
         // spielstraße
@@ -123,12 +136,6 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         defaultSpeedMap.put("road", 20);
         // forestry stuff
         defaultSpeedMap.put("track", 15);
-
-        //
-        landuseSpeed.put("residential", 40);
-        landuseSpeed.put("commercial", 40);
-        landuseSpeed.put("retail", 40);
-        landuseSpeed.put("industrial", 40);
     }
 
     /**
@@ -164,23 +171,24 @@ public class CarFlagEncoder extends AbstractFlagEncoder
                 }
             }
         }
-
         return speed;
     }
 
     protected double applyAreaSpeed( double oldSpeed, OSMWay way )
     {
         double speed = oldSpeed;
-        String landuses = way.getTag("spatial_surround", "");
-        if (landuseSpeed.size() > 0 && !landuses.isEmpty())
+        String[] landuses = way.getTag("spatial_surround", "").split(";");
+        if (landuses.length > 1) //both start and end of street have landuse tag 
         {
-            for (String landuse : landuses.split(";"))
+            String roadType = way.getTag("highway");
+            for (String landuse : landuses)
             {
-                if (!landuseSpeed.containsKey(landuse))
+                String key = roadType + ":" + landuse;
+                if (!landuseSpeed.containsKey(key))
                 {
                     continue;
                 }
-                double areaSpeed = landuseSpeed.get(landuse);
+                double areaSpeed = landuseSpeed.get(key);
                 if (speed > areaSpeed)
                 {
                     speed = areaSpeed;

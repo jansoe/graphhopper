@@ -467,11 +467,11 @@ public class OSMReader implements DataReader
         if (useLanduse && landuseCases.size() > 0)
         {
             String waySurroundFirst = areaProcessor.getUsage(firstLat, firstLon);
+            String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
             if (!waySurroundFirst.isEmpty())
             {
                 spatialSurround += waySurroundFirst + ";";
             }
-            String waySurroundLast = areaProcessor.getUsage(lastLat, lastLon);
             if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
             {
                 spatialSurround += waySurroundLast;

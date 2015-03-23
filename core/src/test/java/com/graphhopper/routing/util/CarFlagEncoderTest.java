@@ -462,7 +462,7 @@ public class CarFlagEncoderTest
         way.setTag("highway", "secondary");
        
         long speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
-        assertEquals(encoder.landuseSpeed.get("residential"), Double.valueOf(encoder.getSpeed(speedflag)),0.001);
+        assertEquals(encoder.landuseSpeed.get("secondary:residential"), Double.valueOf(encoder.getSpeed(speedflag)),0.001);
 
         // test overwrite by maxspeed
         way.setTag("maxspeed", "100");

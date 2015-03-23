@@ -367,7 +367,12 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
     public Set<String> getLanduseTags()
     {
-        return landuseSpeed.keySet();
+        Set<String> landuseKeys = new LinkedHashSet<String>();
+        for (String key : landuseSpeed.keySet())
+        {
+            landuseKeys.add( key.split(":")[1]);
+        }
+        return landuseKeys;
     }
 
     @Override
