@@ -472,7 +472,7 @@ public class OSMReader implements DataReader
             {
                 spatialSurround += waySurroundFirst + ";";
             }
-            if (!waySurroundLast.isEmpty() && !waySurroundLast.equals(waySurroundFirst))
+            if (!waySurroundLast.isEmpty())
             {
                 spatialSurround += waySurroundLast;
             }

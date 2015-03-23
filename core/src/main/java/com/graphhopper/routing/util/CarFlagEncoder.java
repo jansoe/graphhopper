@@ -99,33 +99,33 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("grass");
 
         // autobahn
-        defaultSpeedMap.put("motorway", 100);
-        defaultSpeedMap.put("motorway_link", 70);
-        defaultSpeedMap.put("motorroad", 90);
+        defaultSpeedMap.put("motorway", 110);
+        defaultSpeedMap.put("motorway_link", 80);
+        defaultSpeedMap.put("motorroad", 100);
         // bundesstraße
-        defaultSpeedMap.put("trunk", 70);
-        defaultSpeedMap.put("trunk_link", 65);
+        defaultSpeedMap.put("trunk", 80);
+        defaultSpeedMap.put("trunk_link", 70);
         // linking bigger town
-        defaultSpeedMap.put("primary", 65);
-        defaultSpeedMap.put("primary_link", 60);
-        landuseSpeed.put("primary:residential", 45);
-        landuseSpeed.put("primary:commercial", 45);
-        landuseSpeed.put("primary:retail", 45);
-        landuseSpeed.put("primary:industrial", 45);
+        defaultSpeedMap.put("primary", 70);
+        defaultSpeedMap.put("primary_link", 65);
+        landuseSpeed.put("primary:residential", 0.8);
+        landuseSpeed.put("primary:commercial", 0.8);
+        landuseSpeed.put("primary:retail", 0.8);
+        landuseSpeed.put("primary:industrial", 0.8);
         // linking towns + villages
-        defaultSpeedMap.put("secondary", 60);
-        defaultSpeedMap.put("secondary_link", 50);
-        landuseSpeed.put("secondary:residential", 40);
-        landuseSpeed.put("secondary:commercial", 40);
-        landuseSpeed.put("secondary:retail", 40);
-        landuseSpeed.put("secondary:industrial", 40);
+        defaultSpeedMap.put("secondary", 65);
+        defaultSpeedMap.put("secondary_link", 55);
+        landuseSpeed.put("secondary:residential", 0.75);
+        landuseSpeed.put("secondary:commercial", 0.75);
+        landuseSpeed.put("secondary:retail", 0.75);
+        landuseSpeed.put("secondary:industrial", 0.75);
         // streets without middle line separation
-        defaultSpeedMap.put("tertiary", 50);
-        defaultSpeedMap.put("tertiary_link", 40);
-        landuseSpeed.put("tertiary:residential", 35);
-        landuseSpeed.put("tertiary:commercial", 35);
-        landuseSpeed.put("tertiary:retail", 35);
-        landuseSpeed.put("tertiary:industrial", 35);
+        defaultSpeedMap.put("tertiary", 55);
+        defaultSpeedMap.put("tertiary_link", 45);
+        landuseSpeed.put("tertiary:residential", 0.6);
+        landuseSpeed.put("tertiary:commercial", 0.6);
+        landuseSpeed.put("tertiary:retail", 0.6);
+        landuseSpeed.put("tertiary:industrial", 0.6);
         
         defaultSpeedMap.put("unclassified", 30);
         defaultSpeedMap.put("residential", 30);
@@ -136,6 +136,8 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         defaultSpeedMap.put("road", 20);
         // forestry stuff
         defaultSpeedMap.put("track", 15);
+        
+        setConsiderLanduse(true);
     }
 
     /**
@@ -174,28 +176,43 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         return speed;
     }
 
+
+    @Override
+    protected double applyMaxSpeed( OSMWay way, double speed, boolean force )
+    {
+        double maxSpeed = getMaxSpeed(way);
+        if (maxSpeed >= 0)
+        {           
+            if (force || maxSpeed < speed)
+            {
+                speed =  maxSpeed;
+            }
+        }        
+        return speed;
+    }
+    
     protected double applyAreaSpeed( double oldSpeed, OSMWay way )
     {
-        double speed = oldSpeed;
+        // adjust speed to smallest speed of landuse cases
+        double speedFactor = 0.9;
+        String roadType = way.getTag("highway");
         String[] landuses = way.getTag("spatial_surround", "").split(";");
-        if (landuses.length > 1) //both start and end of street have landuse tag 
+        if (landuses.length>1) // if both edge start and end lie within landuse area
         {
-            String roadType = way.getTag("highway");
             for (String landuse : landuses)
             {
-                String key = roadType + ":" + landuse;
-                if (!landuseSpeed.containsKey(key))
+                String landuseSpeedFactorKey = roadType + ":" + landuse;
+                if (landuseSpeed.containsKey(landuseSpeedFactorKey))
                 {
-                    continue;
-                }
-                double areaSpeed = landuseSpeed.get(key);
-                if (speed > areaSpeed)
-                {
-                    speed = areaSpeed;
+                    double tmpSpeedFactor = landuseSpeed.get(landuseSpeedFactorKey);
+                    if (tmpSpeedFactor < speedFactor)
+                    {
+                        speedFactor = tmpSpeedFactor;
+                    }
                 }
             }
         }
-        return speed;
+        return oldSpeed*speedFactor;
     }
 
     @Override
@@ -280,16 +297,19 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             // get assumed speed from highway type
             double speed = getSpeed(way);
-            // restrict speed within landuse areas
-            speed = applyAreaSpeed(speed, way);
-            // apply maxpeed tag
+            // apply maxpeed tag and area usage
             speed = applyMaxSpeed(way, speed, true);
-
             // limit speed to max 30 km/h if bad surface
             if (speed > 30 && way.hasTag("surface", badSurfaceSpeedMap))
             {
                 speed = 30;
             }
+            // modify by landuse
+            if (considerLanduse)
+            {
+                speed = applyAreaSpeed(speed, way);
+            }
+
 
             encoded = setSpeed(0, speed);
 

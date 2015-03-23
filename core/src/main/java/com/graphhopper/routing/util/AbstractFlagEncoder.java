@@ -76,8 +76,10 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     private boolean blockFords = true;
     protected final int speedBits;
     protected final double speedFactor;
-
-    protected final HashMap<String, Integer> landuseSpeed = new HashMap<String, Integer>(5);
+    protected boolean considerLanduse = false;
+    
+    // Defines factor of speed change depending on landuse
+    protected final HashMap<String, Double> landuseSpeed = new HashMap<String, Double>(5);
 
     /**
      * @param speedBits    specify the number of bits used for speed
@@ -126,6 +128,11 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public boolean isBlockFords()
     {
         return blockFords;
+    }
+    
+    public void setConsiderLanduse(boolean considerLanduse)
+    {
+        this.considerLanduse = considerLanduse;
     }
 
     /**

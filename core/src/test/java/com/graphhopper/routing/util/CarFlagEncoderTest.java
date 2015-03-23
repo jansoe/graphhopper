@@ -458,16 +458,18 @@ public class CarFlagEncoderTest
     public void testSetLanduseSpeed()
     {
         OSMWay way = new OSMWay(1);
-        way.setTag("spatial_surround", "nonsense;residential");
+        way.setTag("spatial_surround", "commercial;commercial");
         way.setTag("highway", "secondary");
        
         long speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
-        assertEquals(encoder.landuseSpeed.get("secondary:residential"), Double.valueOf(encoder.getSpeed(speedflag)),0.001);
+        assertEquals(encoder.landuseSpeed.get("secondary:commercial")*encoder.defaultSpeedMap.get("secondary"), 
+                     Double.valueOf(encoder.getSpeed(speedflag)), 2.5);
 
         // test overwrite by maxspeed
         way.setTag("maxspeed", "100");
         speedflag = encoder.handleWayTags(way,  encoder.acceptBit, 0);
-        assertEquals(100*0.9, encoder.getSpeed(speedflag), 0.001);
+        assertEquals(100*encoder.landuseSpeed.get("secondary:commercial"), 
+                     encoder.getSpeed(speedflag), 0.001);
     }
 
     @Test
