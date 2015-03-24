@@ -79,8 +79,9 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected boolean considerLanduse = false;
     
     // Defines factor of speed change depending on landuse
-    protected final HashMap<String, Double> landuseSpeed = new HashMap<String, Double>(5);
-
+    protected final HashMap<String, Double> landuseSpeedFactor = new HashMap<String, Double>(5);
+    protected final HashMap<String, Integer> landuseMaxSpeed = new HashMap<String, Integer>(5);
+    
     /**
      * @param speedBits    specify the number of bits used for speed
      * @param speedFactor  specify the factor to multiple the stored value (can be used to increase
@@ -375,7 +376,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     public Set<String> getLanduseTags()
     {
         Set<String> landuseKeys = new LinkedHashSet<String>();
-        for (String key : landuseSpeed.keySet())
+        for (String key : landuseSpeedFactor.keySet())
         {
             landuseKeys.add( key.split(":")[1]);
         }
