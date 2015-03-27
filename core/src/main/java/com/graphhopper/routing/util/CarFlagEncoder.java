@@ -101,22 +101,23 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         // default speeds for different types of highways. 
         // might be set in combination with different landuse tags seperated by colon, e.g. highwaytag:landusetag
         // autobahn
-        defaultSpeedMap.put("motorway", 120);
-        defaultSpeedMap.put("motorway_link", 60);
-        defaultSpeedMap.put("motorroad", 100);
+        defaultSpeedMap.put("motorway", 100);
+        defaultSpeedMap.put("motorway_link", 70);
+        defaultSpeedMap.put("motorroad", 90);
         // bundesstraße
-        defaultSpeedMap.put("trunk", 100);
-        defaultSpeedMap.put("trunk_link", 60);
+        defaultSpeedMap.put("trunk", 70);
+        defaultSpeedMap.put("trunk_link", 65);
         // linking bigger town
-        defaultSpeedMap.put("primary", 80);
+        defaultSpeedMap.put("primary", 65);
         defaultSpeedMap.put("primary_link", 60);
+        // a speed of 45 corresponds to the speed a maxspeed 50 tag would get
         defaultSpeedMap.put("primary:residential", 45);
         defaultSpeedMap.put("primary:commercial", 45);
         defaultSpeedMap.put("primary:retail", 45);
         defaultSpeedMap.put("primary:industrial", 45);
         // linking towns + villages
-        defaultSpeedMap.put("secondary", 70);
-        defaultSpeedMap.put("secondary_link", 45);
+        defaultSpeedMap.put("secondary", 60);
+        defaultSpeedMap.put("secondary_link", 50);
         defaultSpeedMap.put("secondary:residential", 45);
         defaultSpeedMap.put("secondary:commercial", 45);
         defaultSpeedMap.put("secondary:retail", 45);
@@ -178,7 +179,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         
         //apply default speed for landuse cases
         String[] landuses = way.getTag("spatial_surround", "").split(";");
-        if (landuses.length>0)
+        if (considerLanduse && landuses.length>0)
         {
             for (String landuse: landuses)
             {
@@ -194,16 +195,22 @@ public class CarFlagEncoder extends AbstractFlagEncoder
 
     public Set<String> getLanduseTags()
     {
-        Set<String> landuseKeys = new LinkedHashSet<String>();
-        for (String key : defaultSpeedMap.keySet())
+        if (considerLanduse)
         {
-            String[] keyParts = key.split(":");
-            if (keyParts.length>0)
+            Set<String> landuseKeys = new LinkedHashSet<String>();
+            for (String key : defaultSpeedMap.keySet())
             {
-                landuseKeys.add(keyParts[1]);
+                String[] keyParts = key.split(":");
+                if (keyParts.length > 1)
+                {
+                    landuseKeys.add(keyParts[1]);
+                }
             }
-        }
         return landuseKeys;
+        } else
+        {
+            return Collections.emptySet();
+        }
     }
 
     @Override

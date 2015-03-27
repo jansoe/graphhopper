@@ -104,7 +104,7 @@ public class GraphHopperServletIT extends BaseServletTester
         assertTrue("distance wasn't correct:" + rsp.getDistance(), rsp.getDistance() < 21000);
 
         List<Map<String, Object>> instructions = rsp.getInstructions().createJson();
-        assertEquals(23, instructions.size());
+        assertEquals(20, instructions.size());
         assertEquals("Continue onto la Callisa", instructions.get(0).get("text"));
         assertEquals("At roundabout, take exit 2", instructions.get(3).get("text"));
     }

@@ -318,7 +318,56 @@ public class GraphHopperIT
                 .setVehicle(tmpVehicle).setWeighting(tmpWeightCalcStr));
         assertEquals(2, ((RoundaboutInstruction) rsp.getInstructions().get(1)).getExitNumber());
     }
+    
+    @Test
+    public void testDefaultCitySpeed()
+    {
+        String tmpOsmFile = "files/monaco.osm.gz";
+        
+        // no landuse modification
+        CarFlagEncoder carWTOlanduse = new CarFlagEncoder();
+        carWTOlanduse.setConsiderLanduse(false);
+        
+        GraphHopper tmpHopper = new GraphHopper().
+                setStoreOnFlush(true).
+                setOSMFile(tmpOsmFile).
+                setGraphHopperLocation(tmpGraphFile).
+                setEncodingManager(new EncodingManager(carWTOlanduse)).
+                importOrLoad();
+        
+        GHResponse rsp = tmpHopper.route(new GHRequest(43.738337,7.427799, 43.741522, 7.42826)
+                .setVehicle("car"));
+        
+        InstructionList il = rsp.getInstructions();
+        List<Map<String, Object>> resultJson = il.createJson();
+        
+        // old data: avenue de bretagne tagged secondary
+        assertEquals(138.5, (Double) resultJson.get(resultJson.size()-2).get("distance"), 1);
+        assertEquals(9, (Long) resultJson.get(resultJson.size()-2).get("time") / 1000);
+        
+        // landuse modification
+        CarFlagEncoder carWITHlanduse = new CarFlagEncoder();
+        carWITHlanduse.setConsiderLanduse(true);
 
+        Helper.removeDir(new File(tmpGraphFile));
+        tmpHopper = new GraphHopper().
+                setStoreOnFlush(true).
+                setOSMFile(tmpOsmFile).
+                setGraphHopperLocation(tmpGraphFile).
+                setEncodingManager(new EncodingManager(carWITHlanduse)).
+                importOrLoad();
+
+        rsp = tmpHopper.route(new GHRequest(43.738337,7.427799, 43.741522, 7.42826)
+                .setVehicle("car"));
+
+        il = rsp.getInstructions();
+        resultJson = il.createJson();
+
+        // avenue de bretagne reduced to 45 by landuse speed
+        assertEquals(138.5, (Double) resultJson.get(resultJson.size()-2).get("distance"), 1);
+        assertEquals(11, (Long) resultJson.get(resultJson.size()-2).get("time") / 1000);
+    }
+    
     @Test
     public void testMultipleVehiclesAndDoCHForBike()
     {
@@ -335,8 +384,16 @@ public class GraphHopperIT
 
         GHResponse rsp = tmpHopper.route(new GHRequest(43.73005, 7.415707, 43.741522, 7.42826)
                 .setVehicle("car"));
-        assertEquals(207, rsp.getMillis() / 1000f, 1);
-        assertEquals(2838, rsp.getDistance(), 1);
+
+        InstructionList il = rsp.getInstructions();
+        List<Map<String, Object>> resultJson = il.createJson();
+        for (Map<String, Object> instr :  resultJson)
+        {
+            //System.out.println(instr.get("text"));
+        }
+        
+        assertEquals(227, rsp.getMillis() / 1000f, 1);
+        assertEquals(2604, rsp.getDistance(), 1);
 
         rsp = tmpHopper.route(new GHRequest(43.73005, 7.415707, 43.741522, 7.42826)
                 .setVehicle("bike"));

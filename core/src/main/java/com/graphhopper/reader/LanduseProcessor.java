@@ -35,7 +35,7 @@ public class LanduseProcessor implements SpatialPixelMap
     private ArrayList<String> landuseCases = new ArrayList<String>();
     private TLongHashSet landuseOSMnodeIds = new TLongHashSet();
     private TLongObjectHashMap<TIntArrayList> nodes2coord = new TLongObjectHashMap<TIntArrayList>();
-    public TLongByteHashMap landuseMap = new TLongByteHashMap(5, 0.75f);
+    protected TLongByteHashMap landuseMap = new TLongByteHashMap(5, 0.75f);
     private int latUnits, lonUnits;
     private BBox analyzedArea = BBox.createInverse(false);
     private LinearKeyAlgo spatialEncoding;
