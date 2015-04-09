@@ -326,7 +326,9 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             throw new IllegalStateException("No delay value for traffic_lights defined");
         }
-        return numTrafficLights * delayMap.get("traffic_light");
+        double delay = Math.min(numTrafficLights *delayMap.get("traffic_light"), maxPossibleDelay);
+        
+        return  delay;
     }
     
     public String getWayInfo( OSMWay way )
