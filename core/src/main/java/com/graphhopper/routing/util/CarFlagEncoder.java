@@ -111,10 +111,10 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("grass");
 
         maxPossibleSpeed = 100; //[kmH]
-        maxPossibleDelay = 30; //[s]
+        maxPossibleDelay = 180; //[s]
         //accuracy of delay information (usedBits = log2(maxPossilbeDelay/delayResolution))
         delayResolution = 10;
-        delayMap.put("traffic_light", 10);
+        delayMap.put("traffic_light", 60);
         
         // autobahn
         defaultSpeedMap.put("motorway", 100);
