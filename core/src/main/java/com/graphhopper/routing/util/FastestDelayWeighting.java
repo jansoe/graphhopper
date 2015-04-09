@@ -32,6 +32,10 @@ public class FastestDelayWeighting implements Weighting
     {
         double speed = reverse ? encoder.getReverseSpeed(edge.getFlags()) : encoder.getSpeed(edge.getFlags());
         double delay = encoder.getDouble(edge.getFlags(), encoder.K_DELAY);
+        if (delay>0)
+        {
+            System.out.println(delay);
+        }
         if (speed == 0)
             return Double.POSITIVE_INFINITY;
         return edge.getDistance() / speed * SPEED_CONV + delay;

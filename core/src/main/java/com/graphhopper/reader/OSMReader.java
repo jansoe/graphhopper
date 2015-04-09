@@ -870,6 +870,7 @@ public class OSMReader implements DataReader
         osmWayIdToRouteWeightMap = null;
         osmWayIdSet = null;
         edgeIdToOsmWayIdMap = null;
+        dataLayer = null;
         
         //ToDo finish importDataLayer
     }

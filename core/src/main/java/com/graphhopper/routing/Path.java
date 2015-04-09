@@ -18,6 +18,7 @@
 package com.graphhopper.routing;
 
 import com.graphhopper.routing.util.DefaultEdgeFilter;
+import com.graphhopper.routing.util.FastestDelayWeighting;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.storage.EdgeEntry;
 import com.graphhopper.storage.Graph;
@@ -236,8 +237,11 @@ public class Path
 
         if (speed == 0)
             throw new IllegalStateException("Speed cannot be 0 for unblocked edge, use access properties to mark edge blocked! Should only occur for shortest path calculation. See #242.");
-
-        return (long) (distance * 3600 / speed);
+        
+        // get delays, e.g. traffic lights in s
+        double delayS = encoder.supports(FastestDelayWeighting.class)? encoder.getDouble(flags, encoder.K_DELAY): 0;
+        
+        return (long) (distance * 3600 / speed + delayS*1000);
     }
 
     /**

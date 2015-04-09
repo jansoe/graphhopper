@@ -111,10 +111,10 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("grass");
 
         maxPossibleSpeed = 100; //[kmH]
-        maxPossibleDelay = 180; //[s]
+        maxPossibleDelay = 30; //[s]
         //accuracy of delay information (usedBits = log2(maxPossilbeDelay/delayResolution))
         delayResolution = 10;
-        delayMap.put("traffic_light", 60);
+        delayMap.put("traffic_light", 10);
         
         // autobahn
         defaultSpeedMap.put("motorway", 100);
@@ -241,7 +241,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     {
         if (key == K_DELAY)
         {
-            delayEncoder.setDoubleValue(flags, value);
+            flags = delayEncoder.setDoubleValue(flags, value);
         } else
         {
             throw new UnsupportedOperationException("Unknown key " + key + " for double value.");
@@ -317,7 +317,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         long flags = edge.getFlags();
         int numTrafficLights = Integer.parseInt(way.getTag("delaySignature"));
         double delay = calcTrafficLightDelay(numTrafficLights);
-        setDouble(flags, K_DELAY, delay);
+        edge.setFlags(setDouble(flags, K_DELAY, delay));
     }
 
     public double calcTrafficLightDelay(int numTrafficLights)
@@ -326,7 +326,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             throw new IllegalStateException("No delay value for traffic_lights defined");
         }
-        double delay = Math.min(numTrafficLights *delayMap.get("traffic_light"), maxPossibleDelay);
+        double delay = Math.min(numTrafficLights * delayMap.get("traffic_light"), maxPossibleDelay);
         
         return  delay;
     }
