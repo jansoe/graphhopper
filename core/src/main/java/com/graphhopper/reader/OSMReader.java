@@ -98,7 +98,6 @@ public class OSMReader implements DataReader
     // smaller memory overhead for bigger data sets because of avoiding a "rehash"
     // remember how many times a node was used to identify tower nodes
     private LongIntMap osmNodeIdToInternalNodeMap;
-    private TLongLongHashMap osmNodeIdToNodeFlagsMap;
     private TLongLongHashMap osmWayIdToRouteWeightMap;
     // stores osm way ids used by relations to identify which edge ids needs to be mapped later
     private TLongHashSet osmWayIdSet = new TLongHashSet();
@@ -118,16 +117,17 @@ public class OSMReader implements DataReader
     private File osmFile;
     private Map<FlagEncoder, EdgeExplorer> outExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
     private Map<FlagEncoder, EdgeExplorer> inExplorerMap = new HashMap<FlagEncoder, EdgeExplorer>();
+    
+    protected ImportDataLayer dataLayer;
 
     public OSMReader( GraphStorage storage )
     {
         this.graphStorage = storage;
         this.nodeAccess = graphStorage.getNodeAccess();
-
         osmNodeIdToInternalNodeMap = new GHLongIntBTree(200);
-        osmNodeIdToNodeFlagsMap = new TLongLongHashMap(200, .5f, 0, 0);
         osmWayIdToRouteWeightMap = new TLongLongHashMap(200, .5f, 0, 0);
         pillarInfo = new PillarInfo(nodeAccess.is3D(), graphStorage.getDirectory());
+        dataLayer = new ImportDataLayer(osmNodeIdToInternalNodeMap);
     }
 
     @Override
@@ -375,15 +375,12 @@ public class OSMReader implements DataReader
         for (int i = 0; i < size; i++)
         {
             long nodeId = osmNodeIds.get(i);
-            long nodeFlags = getNodeFlagsMap().get(nodeId);
+            long nodeFlags = dataLayer.getNodeBarrierFlags(nodeId, encodingManager);
             // barrier was spotted and way is otherwise passable for that mode of travel
             if (nodeFlags > 0)
             {
                 if ((nodeFlags & wayFlags) > 0)
                 {
-                    // remove barrier to avoid duplicates
-                    getNodeFlagsMap().put(nodeId, 0);
-
                     // create shadow node copy for zero length edge
                     long newNodeId = addBarrierNode(nodeId);
                     if (i > 0)
@@ -428,9 +425,12 @@ public class OSMReader implements DataReader
             // no barriers - simply add the whole way
             createdEdges.addAll(addOSMWay(way.getNodes(), wayFlags, wayOsmId));
         }
-
+        
+        // loop through created edges (way segments) and enrich by segment specific information        
         for (EdgeIteratorState edge : createdEdges)
         {
+            Integer delaySignature = dataLayer.getDelaySignature(edge.getEdge());
+            way.setTag("delaySignature", delaySignature.toString());
             encodingManager.applyWayTags(way, edge);
         }
     }
@@ -561,12 +561,13 @@ public class OSMReader implements DataReader
         {
             addNode(node);
 
-            // analyze node tags for barriers
             if (node.hasTags())
             {
-                long nodeFlags = encodingManager.handleNodeTags(node);
-                if (nodeFlags != 0)
-                    getNodeFlagsMap().put(node.getId(), nodeFlags);
+                // analyze node tags for barriers
+                 dataLayer.markBarrierNode(node, encodingManager);
+
+                // preprocess delay tags (e.g. traffic lights)
+                dataLayer.markDelayNode(node, encodingManager);
             }
 
             locations++;
@@ -658,13 +659,15 @@ public class OSMReader implements DataReader
     /**
      * This method creates from an OSM way (via the osm ids) one or more edges in the graph.
      */
-    Collection<EdgeIteratorState> addOSMWay( TLongList osmNodeIds, long flags, long wayOsmId )
+    Collection<EdgeIteratorState> addOSMWay( TLongList osmNodeIds, long flags, long wayOsmId)
     {
         PointList pointList = new PointList(osmNodeIds.size(), nodeAccess.is3D());
         List<EdgeIteratorState> newEdges = new ArrayList<EdgeIteratorState>(5);
         int firstNode = -1;
         int lastIndex = osmNodeIds.size() - 1;
         int lastInBoundsPillarNode = -1;
+        int trafficLightCounter = 0;
+        List<Integer> trafficLightSegmentList = new ArrayList<Integer>(5);
         try
         {
             for (int i = 0; i < osmNodeIds.size(); i++)
@@ -691,8 +694,17 @@ public class OSMReader implements DataReader
                         tmpNode = -tmpNode - 3;
                         if (pointList.getSize() > 1 && firstNode >= 0)
                         {
-                            // TOWER node
-                            newEdges.add(addEdge(firstNode, tmpNode, pointList, flags, wayOsmId));
+                         
+                            // create edge
+                            EdgeIteratorState newEdge = addEdge(firstNode, tmpNode, pointList, flags, wayOsmId);
+                            newEdges.add(newEdge);
+
+                            // add traffic light count to segment and reset traffic light count
+                            // if tower node has traffic light, start count for next edge already with one
+                            dataLayer.setTrafficLightSignature(newEdge.getEdge(), trafficLightCounter);
+                            trafficLightCounter = (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;
+                            
+                            // reset waypoint list
                             pointList.clear();
                             pointList.add(nodeAccess, tmpNode);
                         }
@@ -702,10 +714,13 @@ public class OSMReader implements DataReader
                     continue;
                 }
 
+                trafficLightCounter += (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;
+
                 if (tmpNode <= -TOWER_NODE && tmpNode >= TOWER_NODE)
                     throw new AssertionError("Mapped index not in correct bounds " + tmpNode + ", " + osmId);
 
-                if (tmpNode > -TOWER_NODE)
+                
+                if (tmpNode > -TOWER_NODE) // node is pillar node
                 {
                     boolean convertToTowerNode = i == 0 || i == lastIndex;
                     if (!convertToTowerNode)
@@ -717,14 +732,23 @@ public class OSMReader implements DataReader
                     tmpNode = handlePillarNode(tmpNode, osmId, pointList, convertToTowerNode);
                 }
 
-                if (tmpNode < TOWER_NODE)
+                if (tmpNode < TOWER_NODE) // node is tower node
                 {
                     // TOWER node
                     tmpNode = -tmpNode - 3;
                     pointList.add(nodeAccess, tmpNode);
                     if (firstNode >= 0)
                     {
-                        newEdges.add(addEdge(firstNode, tmpNode, pointList, flags, wayOsmId));
+                        // create edge
+                        EdgeIteratorState newEdge = addEdge(firstNode, tmpNode, pointList, flags, wayOsmId);
+                        newEdges.add(newEdge);
+
+                        // add traffic light count to segment and reset traffic light count
+                        // if tower node has traffic light, start count for next edge already with one
+                        dataLayer.setTrafficLightSignature(newEdge.getEdge(), trafficLightCounter);
+                        trafficLightCounter = (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;
+
+                        // reset waypoint list
                         pointList.clear();
                         pointList.add(nodeAccess, tmpNode);
                     }
@@ -843,10 +867,11 @@ public class OSMReader implements DataReader
         pillarInfo.clear();
         eleProvider.release();
         osmNodeIdToInternalNodeMap = null;
-        osmNodeIdToNodeFlagsMap = null;
         osmWayIdToRouteWeightMap = null;
         osmWayIdSet = null;
         edgeIdToOsmWayIdMap = null;
+        
+        //ToDo finish importDataLayer
     }
 
     /**
@@ -945,10 +970,6 @@ public class OSMReader implements DataReader
         return osmNodeIdToInternalNodeMap;
     }
 
-    protected TLongLongMap getNodeFlagsMap()
-    {
-        return osmNodeIdToNodeFlagsMap;
-    }
 
     TLongLongHashMap getRelFlagsMap()
     {
@@ -999,7 +1020,7 @@ public class OSMReader implements DataReader
     {
         LoggerFactory.getLogger(getClass()).info(
                 "finished " + str + " processing." + " nodes: " + graphStorage.getNodes() + ", osmIdMap.size:" + getNodeMap().getSize()
-                + ", osmIdMap:" + getNodeMap().getMemoryUsage() + "MB" + ", nodeFlagsMap.size:" + getNodeFlagsMap().size()
+                + ", osmIdMap:" + getNodeMap().getMemoryUsage() + "MB" + ", " + dataLayer.getSizeInfo()
                 + ", relFlagsMap.size:" + getRelFlagsMap().size() + " " + Helper.getMemInfo());
     }
 

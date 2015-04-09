@@ -88,6 +88,7 @@ public interface FlagEncoder extends TurnCostEncoder
      * Reports wether this edge is part of a roundabout.
      */
     static final int K_ROUNDABOUT = 2;
+    public final static int K_DELAY = 42;
 
     /**
      * Returns arbitrary boolean value identified by the specified key.

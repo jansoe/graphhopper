@@ -394,6 +394,7 @@ public class EncodingManager
         }
     }
 
+    
     /**
      * The returned list is never empty.
      */
@@ -446,4 +447,6 @@ public class EncodingManager
             bytesForFlags = 8;
         return new EncodingManager(acceptStr, bytesForFlags);
     }
+
+
 }

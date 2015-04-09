@@ -836,9 +836,15 @@ public class GraphHopper implements GraphHopperAPI
         } else if ("fastest".equalsIgnoreCase(weighting) || weighting.isEmpty())
         {
             if (encoder.supports(PriorityWeighting.class))
+            {
                 result = new PriorityWeighting(encoder);
-            else
+            } else if (encoder.supports(FastestDelayWeighting.class)) 
+            {
+                result = new FastestDelayWeighting(encoder);
+            } else
+            {
                 result = new FastestWeighting(encoder);
+            }
         } else
         {
             throw new UnsupportedOperationException("weighting " + weighting + " not supported");

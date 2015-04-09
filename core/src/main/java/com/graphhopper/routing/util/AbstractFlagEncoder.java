@@ -47,18 +47,26 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected long backwardBit;
     protected long directionBitMask;
     protected long roundaboutBit;
-    protected EncodedDoubleValue speedEncoder;
     // bit to signal that way is accepted
     protected long acceptBit;
     protected long ferryBit;
-
+    
+    // Encoding of speed values
+    protected EncodedDoubleValue speedEncoder;
     // This value determines the maximal possible speed of any road regardless the maxspeed value
-    // lower values allow more compact representation of the routing graph
     protected int maxPossibleSpeed;
-
+    protected final int speedBits;
+    protected final double speedFactor;
+    
+    // Encoding of turn costs
     private EncodedValue turnCostEncoder;
     private long turnRestrictionBit;
     private final int maxTurnCosts;
+    
+    // Encoding of delays
+    protected EncodedDoubleValue delayEncoder;
+    protected int maxPossibleDelay;
+    protected int delayResolution;
 
     /* processing properties (to be initialized lazy when needed) */
     protected EdgeExplorer edgeOutExplorer;
@@ -76,8 +84,6 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected final HashSet<String> potentialBarriers = new HashSet<String>(5);
     private boolean blockByDefault = true;
     private boolean blockFords = true;
-    protected final int speedBits;
-    protected final double speedFactor;
 
     /**
      * @param speedBits specify the number of bits used for speed
@@ -309,7 +315,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     {
         return getSpeed(flags);
     }
-
+    
     @Override
     public long setProperties( double speed, boolean forward, boolean backward )
     {

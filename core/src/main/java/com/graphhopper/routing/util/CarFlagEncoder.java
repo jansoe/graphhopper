@@ -17,6 +17,7 @@
  */
 package com.graphhopper.routing.util;
 
+import java.lang.String;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -24,7 +25,10 @@ import java.util.Set;
 
 import com.graphhopper.reader.OSMRelation;
 import com.graphhopper.reader.OSMWay;
+import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.Helper;
+import com.sun.org.apache.xpath.internal.operations.*;
+
 import java.util.*;
 
 /**
@@ -37,6 +41,10 @@ public class CarFlagEncoder extends AbstractFlagEncoder
 {
     protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<String, Integer>();
     protected final Set<String> badSurfaceSpeedMap = new HashSet<String>();
+
+    //delay objects and associated delay
+    protected final Map<String, Integer> delayMap = new HashMap<String, Integer>();
+
     /**
      * A map which associates string to speed. Get some impression:
      * http://www.itoworld.com/map/124#fullscreen
@@ -102,7 +110,11 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("ground");
         badSurfaceSpeedMap.add("grass");
 
-        maxPossibleSpeed = 100;
+        maxPossibleSpeed = 100; //[kmH]
+        maxPossibleDelay = 30; //[s]
+        //accuracy of delay information (usedBits = log2(maxPossilbeDelay/delayResolution))
+        delayResolution = 10;
+        delayMap.put("traffic_light", 10);
         
         // autobahn
         defaultSpeedMap.put("motorway", 100);
@@ -141,7 +153,13 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         shift = super.defineWayBits(index, shift);
         speedEncoder = new EncodedDoubleValue("Speed", shift, speedBits, speedFactor, defaultSpeedMap.get("secondary"), 
                                               maxPossibleSpeed);
-        return shift + speedEncoder.getBits();
+        shift += speedEncoder.getBits();
+        
+        int requiredBits = 32 - Integer.numberOfLeadingZeros((int) Math.ceil((double) maxPossibleDelay/delayResolution));
+        delayEncoder = new EncodedDoubleValue("Delay", shift, requiredBits, delayResolution, 0, maxPossibleDelay);
+        shift += delayEncoder.getBits();
+        
+        return shift;
     }
 
     protected double getSpeed( OSMWay way )
@@ -219,6 +237,31 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     }
 
     @Override
+    public long setDouble( long flags, int key, double value )
+    {
+        if (key == K_DELAY)
+        {
+            delayEncoder.setDoubleValue(flags, value);
+        } else
+        {
+            throw new UnsupportedOperationException("Unknown key " + key + " for double value.");
+        }
+        return flags;
+    }
+
+    @Override
+    public double getDouble( long flags, int key)
+    {
+        if (key == K_DELAY)
+        {
+            return delayEncoder.getDoubleValue(flags);
+        } else
+        {
+            throw new UnsupportedOperationException("Unknown key " + key + " for double value.");
+        }
+    }
+    
+    @Override
     public long handleWayTags( OSMWay way, long allowed, long relationFlags )
     {
         if (!isAccept(allowed))
@@ -267,7 +310,25 @@ public class CarFlagEncoder extends AbstractFlagEncoder
 
         return encoded;
     }
+    
+    @Override
+    public void applyWayTags( OSMWay way, EdgeIteratorState edge )
+    {
+        long flags = edge.getFlags();
+        int numTrafficLights = Integer.parseInt(way.getTag("delaySignature"));
+        double delay = calcTrafficLightDelay(numTrafficLights);
+        setDouble(flags, K_DELAY, delay);
+    }
 
+    public double calcTrafficLightDelay(int numTrafficLights)
+    {
+        if (!delayMap.containsKey("traffic_light"))
+        {
+            throw new IllegalStateException("No delay value for traffic_lights defined");
+        }
+        return numTrafficLights * delayMap.get("traffic_light");
+    }
+    
     public String getWayInfo( OSMWay way )
     {
         String str = "";
@@ -306,4 +367,14 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     {
         return "car";
     }
+
+    @Override
+    public boolean supports( Class<?> feature )
+    {
+        if (super.supports(feature))
+            return true;
+
+        return FastestDelayWeighting.class.isAssignableFrom(feature);
+    }
+    
 }

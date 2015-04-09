@@ -635,7 +635,7 @@ public class OSMReaderTest
         // save some node tags for first node
         OSMNode osmNode = new OSMNode(1, 1.1d, 1.0d);
         osmNode.setTag("test", "now");
-        osmreader.getNodeFlagsMap().put(1, encoder.handleNodeTags(osmNode));
+        osmreader.dataLayer.markBarrierNode(osmNode, manager);
 
         OSMWay way = new OSMWay(1L);
         way.getNodes().add(1);
