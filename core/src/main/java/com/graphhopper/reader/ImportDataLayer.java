@@ -45,7 +45,7 @@ public class ImportDataLayer
 
     public void markDelayNode( OSMNode osmNode, EncodingManager encodingManager )
     {
-        if (osmNode.hasTag("highway", "traffic_lights"))
+        if (osmNode.hasTag("highway", "traffic_signals"))
         {
             int internalNodeId = osmNodeIdToInternalNodeMap.get(osmNode.getId());
             if (Math.abs(internalNodeId) < 3)
