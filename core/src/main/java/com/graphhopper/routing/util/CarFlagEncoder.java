@@ -316,8 +316,16 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     {
         long flags = edge.getFlags();
         int numTrafficLights = Integer.parseInt(way.getTag("delaySignature"));
-        double delay = calcTrafficLightDelay(numTrafficLights);
-        edge.setFlags(setDouble(flags, K_DELAY, delay));
+        
+        // Avoid double delay at big crossings                                                           ___|_|___
+        // usually small edges with two traffic lights are just the mittel part of a two lane crossing.  ___|_|___
+        // do not count those traffic lights as they are synchronized!                                      | |
+        boolean skip = (numTrafficLights>1) && (edge.getDistance()<70);
+        if (!skip)
+        {
+            double delay = calcTrafficLightDelay(numTrafficLights);
+            edge.setFlags(setDouble(flags, K_DELAY, delay));
+        }
     }
 
     public double calcTrafficLightDelay(int numTrafficLights)
