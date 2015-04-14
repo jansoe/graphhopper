@@ -83,13 +83,14 @@ public class ImportDataLayer
 
     public void markJunctionNode( OSMWay way, long osmNodeId )
     {
+        junctionWayCount.adjustOrPutValue(osmNodeId, (byte) 1, (byte) 1);
+        //System.out.println(osmNodeId + ": #"+ junctionWayCount.get(osmNodeId));
         String highwayTag = way.getTag("highway");
         byte highwayType = roadHierachy.containsKey(highwayTag)? roadHierachy.get(highwayTag) : (byte) 0;
         byte currentJunctionType = junctionType.containsKey(osmNodeId)? junctionType.get(osmNodeId) : (byte) 0;
         if (highwayType > currentJunctionType)
         {
             junctionType.put(osmNodeId, highwayType);
-            junctionWayCount.adjustOrPutValue(osmNodeId, (byte) (junctionWayCount.get(osmNodeId) + 1), (byte) 1);
         }        
     }
     
@@ -124,7 +125,7 @@ public class ImportDataLayer
     {
         byte junction1 = (junctionWayCount.get(osmNodeId1)>2)? junctionType.get(osmNodeId1) : 0;
         byte junction2 = (junctionWayCount.get(osmNodeId2)>2)? junctionType.get(osmNodeId2) : 0;
-        int junctionSignature = (junction1) & (junction2 << 8);
+        int junctionSignature = (junction1) | (junction2 << 8);
         edgeJunctionSignature.put(edgeId, junctionSignature);
     }
     
