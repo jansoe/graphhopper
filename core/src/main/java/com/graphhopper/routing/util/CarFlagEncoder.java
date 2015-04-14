@@ -111,10 +111,10 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("grass");
 
         maxPossibleSpeed = 100; //[kmH]
-        maxPossibleDelay = 35; //[s]
+        maxPossibleDelay = 30; //[s]
         //accuracy of delay information (usedBits = log2(maxPossilbeDelay/delayResolution))
-        delayResolution = 5;
-        delayMap.put("traffic_light", 5);
+        delayResolution = 2;
+        delayMap.put("traffic_light", 4);
         
         // autobahn
         defaultSpeedMap.put("motorway", 100);
@@ -320,16 +320,40 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         int edgeType = Integer.parseInt(way.getTag("edge"));
         int junction1 = Integer.parseInt(way.getTag("junction1"));
         int junction2 = Integer.parseInt(way.getTag("junction2"));
-        
-        // Add delay to large roads if the cross bigger roads
-        delay += (edgeType>2 && junction1>0 && edgeType<junction1)? 5: 0;
-        delay += (edgeType>2 && junction2>0 && edgeType<junction2)? 5: 0;
-        
-        // For small road types add standard delay
-        delay += (edgeType<=2 && junction1>0)? 5: 0;
-        delay += (edgeType<=2 && junction2>0)? 5: 0;
 
-        // Avoid double delay at big crossings                                                           ___|_|___
+        for (int junction : new Integer[]{junction1, junction2})
+        {
+            int hierachyDiff = junction1 - edgeType;
+            // Add delay to large roads if they cross bigger roads
+            if (edgeType > 2)
+            {
+                if (hierachyDiff > 1)
+                {
+                    delay += 8;
+                } else if (hierachyDiff == 1)
+                {
+                    delay += 4;
+                } else
+                {
+                    // no delay
+                }
+            } else // For small road types add standard delay
+            {
+                if (hierachyDiff > 1)
+                {
+                    delay += 8;
+                } else if (hierachyDiff == 1)
+                {
+                    delay += 4;
+                } else if (hierachyDiff == 0)
+                {
+                    delay += 2;
+                }
+            }
+        }
+        
+        
+        // Add Traffic Lights: Avoid double delay at big crossings                                       ___|_|___
         // usually small edges with two traffic lights are just the mittel part of a two lane crossing.  ___|_|___
         // do not count those traffic lights as they are synchronized!                                      | |
         boolean skip = (numTrafficLights>1) && (edge.getDistance()<70);
