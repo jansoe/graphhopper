@@ -21,7 +21,6 @@ import static com.graphhopper.util.Helper.nf;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TIntLongMap;
-import gnu.trove.map.TLongLongMap;
 import gnu.trove.map.hash.TIntLongHashMap;
 import gnu.trove.map.hash.TLongLongHashMap;
 import gnu.trove.set.TLongSet;
@@ -181,6 +180,7 @@ public class OSMReader implements DataReader
                         for (int index = 0; index < s; index++)
                         {
                             prepareHighwayNode(wayNodes.get(index));
+                            dataLayer.markJunctionNode(way, wayNodes.get(index));
                         }
 
                         if (++tmpWayCounter % 5000000 == 0)
@@ -339,12 +339,11 @@ public class OSMReader implements DataReader
         if (!way.hasTags())
             return;
 
-        long wayOsmId = way.getId();
-
         long includeWay = encodingManager.acceptWay(way);
         if (includeWay == 0)
             return;
-
+        
+        long wayOsmId = way.getId();
         long relationFlags = getRelFlagsMap().get(way.getId());
 
         // TODO move this after we have created the edge and know the coordinates => encodingManager.applyWayTags
@@ -429,8 +428,7 @@ public class OSMReader implements DataReader
         // loop through created edges (way segments) and enrich by segment specific information        
         for (EdgeIteratorState edge : createdEdges)
         {
-            Integer delaySignature = dataLayer.getDelaySignature(edge.getEdge());
-            way.setTag("delaySignature", delaySignature.toString());
+            way = dataLayer.tagWaySegment(way, edge);
             encodingManager.applyWayTags(way, edge);
         }
     }
@@ -657,13 +655,15 @@ public class OSMReader implements DataReader
     }
 
     /**
-     * This method creates from an OSM way (via the osm ids) one or more edges in the graph.
+     * This method creates from an OSM way (or part of it via the osm ids) one or more edges in the graph.
      */
     Collection<EdgeIteratorState> addOSMWay( TLongList osmNodeIds, long flags, long wayOsmId)
     {
         PointList pointList = new PointList(osmNodeIds.size(), nodeAccess.is3D());
         List<EdgeIteratorState> newEdges = new ArrayList<EdgeIteratorState>(5);
         int firstNode = -1;
+        long firstNodeOSMid = -1;
+
         int lastIndex = osmNodeIds.size() - 1;
         int lastInBoundsPillarNode = -1;
         int trafficLightCounter = 0;
@@ -694,21 +694,23 @@ public class OSMReader implements DataReader
                         tmpNode = -tmpNode - 3;
                         if (pointList.getSize() > 1 && firstNode >= 0)
                         {
-                         
                             // create edge
                             EdgeIteratorState newEdge = addEdge(firstNode, tmpNode, pointList, flags, wayOsmId);
                             newEdges.add(newEdge);
 
                             // add traffic light count to segment and reset traffic light count
                             // if tower node has traffic light, start count for next edge already with one
-                            dataLayer.setTrafficLightSignature(newEdge.getEdge(), trafficLightCounter);
-                            trafficLightCounter = (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;
+                            dataLayer.markEdgeTrafficLight(newEdge.getEdge(), trafficLightCounter);
+                            trafficLightCounter = (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;                            
+                            // mark junction types of edge
+                            dataLayer.markEdgeJunction(newEdge.getEdge(), firstNodeOSMid, osmId);
                             
                             // reset waypoint list
                             pointList.clear();
                             pointList.add(nodeAccess, tmpNode);
                         }
                         firstNode = tmpNode;
+                        firstNodeOSMid = osmId;
                         lastInBoundsPillarNode = -1;
                     }
                     continue;
@@ -745,14 +747,17 @@ public class OSMReader implements DataReader
 
                         // add traffic light count to segment and reset traffic light count
                         // if tower node has traffic light, start count for next edge already with one
-                        dataLayer.setTrafficLightSignature(newEdge.getEdge(), trafficLightCounter);
+                        dataLayer.markEdgeTrafficLight(newEdge.getEdge(), trafficLightCounter);
                         trafficLightCounter = (dataLayer.hasTrafficLight(osmId)) ? 1 : 0;
+                        // mark junction types of edge
+                        dataLayer.markEdgeJunction(newEdge.getEdge(), firstNodeOSMid, osmId);
 
                         // reset waypoint list
                         pointList.clear();
                         pointList.add(nodeAccess, tmpNode);
                     }
                     firstNode = tmpNode;
+                    firstNodeOSMid = osmId;
                 }
             }
         } catch (RuntimeException ex)

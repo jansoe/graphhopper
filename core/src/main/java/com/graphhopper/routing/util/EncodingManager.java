@@ -357,7 +357,6 @@ public class EncodingManager
         {
             flags |= encoder.handleNodeTags(node);
         }
-
         return flags;
     }
 

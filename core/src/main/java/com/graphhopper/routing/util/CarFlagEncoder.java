@@ -111,10 +111,10 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         badSurfaceSpeedMap.add("grass");
 
         maxPossibleSpeed = 100; //[kmH]
-        maxPossibleDelay = 30; //[s]
+        maxPossibleDelay = 35; //[s]
         //accuracy of delay information (usedBits = log2(maxPossilbeDelay/delayResolution))
-        delayResolution = 10;
-        delayMap.put("traffic_light", 10);
+        delayResolution = 5;
+        delayMap.put("traffic_light", 5);
         
         // autobahn
         defaultSpeedMap.put("motorway", 100);
@@ -314,18 +314,32 @@ public class CarFlagEncoder extends AbstractFlagEncoder
     @Override
     public void applyWayTags( OSMWay way, EdgeIteratorState edge )
     {
+        double delay = 0;
         long flags = edge.getFlags();
         int numTrafficLights = Integer.parseInt(way.getTag("delaySignature"));
+        int edgeType = Integer.parseInt(way.getTag("edge"));
+        int junction1 = Integer.parseInt(way.getTag("junction1"));
+        int junction2 = Integer.parseInt(way.getTag("junction2"));
         
+        // Add delay to large roads if the cross bigger roads
+        delay += (edgeType>2 && junction1>0 && edgeType<junction1)? 5: 0;
+        delay += (edgeType>2 && junction2>0 && edgeType<junction2)? 5: 0;
+        
+        // For small road types add standard delay
+        delay += (edgeType<=2 && junction1>0)? 5: 0;
+        delay += (edgeType<=2 && junction2>0)? 5: 0;
+
         // Avoid double delay at big crossings                                                           ___|_|___
         // usually small edges with two traffic lights are just the mittel part of a two lane crossing.  ___|_|___
         // do not count those traffic lights as they are synchronized!                                      | |
         boolean skip = (numTrafficLights>1) && (edge.getDistance()<70);
         if (!skip)
         {
-            double delay = calcTrafficLightDelay(numTrafficLights);
-            edge.setFlags(setDouble(flags, K_DELAY, delay));
+            delay += calcTrafficLightDelay(numTrafficLights);
         }
+        edge.setFlags(setDouble(flags, K_DELAY, delay));
+
+
     }
 
     public double calcTrafficLightDelay(int numTrafficLights)
