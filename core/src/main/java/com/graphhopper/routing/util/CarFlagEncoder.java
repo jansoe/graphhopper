@@ -323,7 +323,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
 
         for (int junction : new Integer[]{junction1, junction2})
         {
-            int hierachyDiff = junction1 - edgeType;
+            int hierachyDiff = junction - edgeType;
             // Add delay to large roads if they cross bigger roads
             if (edgeType > 2)
             {
@@ -372,7 +372,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             throw new IllegalStateException("No delay value for traffic_lights defined");
         }
-        double delay = Math.min(numTrafficLights * delayMap.get("traffic_light"), maxPossibleDelay);
+        double delay = Math.min(numTrafficLights,3) * delayMap.get("traffic_light");
         
         return  delay;
     }
