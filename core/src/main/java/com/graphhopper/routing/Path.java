@@ -240,7 +240,8 @@ public class Path
         
         // get delays, e.g. traffic lights in s
         double delayS = encoder.supports(FastestDelayWeighting.class)? encoder.getDouble(flags, encoder.K_DELAY): 0;
-        
+        System.out.println(delayS);
+
         return (long) (distance * 3600 / speed + delayS*1000);
     }
 
@@ -418,7 +419,8 @@ public class Path
                 double adjLat = nodeAccess.getLatitude(adjNode);
                 double adjLon = nodeAccess.getLongitude(adjNode);
                 double latitude, longitude;
-
+                
+                System.out.println("Edge: " + edge.getName());
                 PointList wayGeo = edge.fetchWayGeometry(3);
                 boolean isRoundabout = encoder.isBool(flags, encoder.K_ROUNDABOUT);
 
