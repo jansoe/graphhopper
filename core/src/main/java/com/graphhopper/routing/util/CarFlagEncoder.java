@@ -326,54 +326,45 @@ public class CarFlagEncoder extends AbstractFlagEncoder
         {
             int hierachyDiff = junction - edgeType;
             // Add delay to large roads if they cross bigger roads
-            if (edgeType > 2)
+            if (edgeType >= 2)
             {
                 if (hierachyDiff > 1)
                 {
-                    delay += 9;
-                } else if (hierachyDiff == 1)
-                {
-                    delay += 6;
-                } else
-                {
-                    // no delay
-                }
-            } else // For small road types add standard delay
-            {
-                if (hierachyDiff > 1)
-                {
-                    delay += 9;
+                    delay += 10;
                 } else if (hierachyDiff == 1)
                 {
                     delay += 6;
                 } else if (hierachyDiff == 0)
                 {
-                    delay += 3;
+                    delay += 4;
+                }
+            } else // For small road types add standard delay
+            {
+                if (hierachyDiff > 1)
+                {
+                    delay += 10;
+                } else if (hierachyDiff == 1)
+                {
+                    delay += 8;
+                } else if (hierachyDiff == 0)
+                {
+                    delay += 6;
                 }
             }
         }
-        // limit delay at small edges
-        if (distance<70)
-        {
-            if (distance>25)
-            {
-                delay = Math.min(delay, 6);
-            } else
-            {
-                delay = 0;
-            }
-        }
-        
+
         // Add Traffic Lights: Avoid double delay at big crossings                                       ___|_|___
         // usually small edges with two traffic lights are just the mittel part of a two lane crossing.  ___|_|___
         // do not count those traffic lights as they are synchronized!                                      | |
+        
+        /*
         boolean skip = (numTrafficLights>1) && (distance<70);
         if (!skip)
         {
             delay += calcTrafficLightDelay(numTrafficLights);
         }
         edge.setFlags(setDouble(flags, K_DELAY, delay));
-
+        */
 
     }
 
