@@ -426,7 +426,6 @@ public class Path
              */
             private double getOtherEdgeOrientation(int jointNode, int secondNode, boolean previous)
             {
-                System.out.println("get ohter");
                 double lat, lon;
                 double jointLat = nodeAccess.getLatitude(jointNode);
                 double jointLon = nodeAccess.getLongitude(jointNode);
