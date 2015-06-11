@@ -443,6 +443,7 @@ public class Path
                 }
                 if (!foundOther)
                 {
+                    System.out.println("At " + jointLat + "," + jointLon);
                     throw new IllegalStateException("Roundabout edge has no connection to other roundabout edge");
                 }
 
@@ -521,28 +522,46 @@ public class Path
                                 
                                 //determine direction of rotation
                                 double incomingOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
+                                if (incomingOrientation < 0)
+                                    incomingOrientation = 2*Math.PI + incomingOrientation;
+                                //System.out.println("Incoming: " + incomingOrientation);
                                 // calculate reverse orientation of roundabout edge on route
                                 double roundaboutOrientation = ac.calcOrientation(latitude, longitude, prevLat, prevLon);
-                                double deltaRoute = (incomingOrientation - roundaboutOrientation);
+                                if (roundaboutOrientation < 0)
+                                    roundaboutOrientation = 2*Math.PI + roundaboutOrientation;
+                                //System.out.println("Taken: " + roundaboutOrientation);
+                                double deltaRoute = (roundaboutOrientation-incomingOrientation);
+                                //System.out.print("deltaRoute: " + deltaRoute);
+
                                 if (deltaRoute<0)
                                 {
-                                    deltaRoute = Math.PI-deltaRoute;
+                                    deltaRoute = 2*Math.PI+deltaRoute;
                                 } else if (deltaRoute >= 2*Math.PI)
                                 {
-                                    deltaRoute -= 2*Math.PI;
+                                    System.out.println("!!!!!! worng !!!!!!!");
                                 }
+                                //System.out.println(" -> " + deltaRoute);
+
+
                                 // calculate direction of incoming roundabout edge
                                 double roundaboutOrientation2 = getOtherEdgeOrientation(baseNode, adjNode, true);
-                                double deltaRoundabout = (roundaboutOrientation2 - roundaboutOrientation);
+                                //System.out.println("Other: " + roundaboutOrientation2);
+
+                                if (roundaboutOrientation2 < 0)
+                                    roundaboutOrientation2 = 2*Math.PI + roundaboutOrientation2;
+                                double deltaRoundabout = (roundaboutOrientation2 - incomingOrientation);
+                                //System.out.print("deltaRound: " + deltaRoundabout);
                                 if (deltaRoundabout<0)
                                 {
-                                    deltaRoundabout = Math.PI-deltaRoundabout;
+                                    deltaRoundabout = Math.PI + deltaRoundabout;
                                 };
                                 if (deltaRoundabout >= 2*Math.PI)
                                 {
-                                    deltaRoundabout -= 2*Math.PI;
+                                    System.out.println("!!!!!! wrong !!!!!!!");
                                 }
-                                roundaboutInstruction.setDirOfRotation(deltaRoute < deltaRoundabout);
+                                //System.out.println(" -> " + deltaRoundabout);
+
+                                roundaboutInstruction.setDirOfRotation(deltaRoute > deltaRoundabout);
                             } else // first instructions is roundabout instruction
                             {
                                 prevOrientation = ac.calcOrientation(prevLat, prevLon, latitude, longitude);
