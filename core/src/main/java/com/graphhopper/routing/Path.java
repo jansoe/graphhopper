@@ -443,8 +443,8 @@ public class Path
                 }
                 if (!foundOther)
                 {
-                    System.out.println("At " + jointLat + "," + jointLon);
-                    throw new IllegalStateException("Roundabout edge has no connection to other roundabout edge");
+                    System.out.println("No proper roundabout at " + jointLat + "," + jointLon);
+                    //throw new IllegalStateException("Roundabout edge has no connection to other roundabout edge");
                 }
 
                 PointList wayGeo = edgeIter.fetchWayGeometry(3);
