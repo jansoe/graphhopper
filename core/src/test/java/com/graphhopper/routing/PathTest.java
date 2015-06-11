@@ -314,7 +314,7 @@ public class PathTest
             double outOrientation = ac.calcOrientation(na.getLat(n3), na.getLon(n3), na.getLat(n4), na.getLon(n4));
             outOrientation = ac.alignOrientation(inOrientation, outOrientation);
             double delta = (inOrientation - outOrientation);
-            delta = clockwise ? (Math.PI + delta) : -1 * (Math.PI - delta);
+            delta = clockwise ? (delta + Math.PI) : (delta - Math.PI);
             return delta;
         }
     }

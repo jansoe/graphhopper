@@ -23,6 +23,7 @@ import com.graphhopper.storage.EdgeEntry;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.NodeAccess;
 import com.graphhopper.util.*;
+import com.graphhopper.util.shapes.GHPoint;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 
@@ -481,9 +482,7 @@ public class Path
                 {
                     latitude = wayGeo.getLatitude(1);
                     longitude = wayGeo.getLongitude(1);
-                    assert java.lang.Double.compare(prevLat, nodeAccess.getLatitude(baseNode)) == 0;
-                    assert java.lang.Double.compare(prevLon, nodeAccess.getLongitude(baseNode)) == 0;
-                }
+                 }
 
                 name = edge.getName();
                 annotation = encoder.getAnnotation(flags, tr);
@@ -522,10 +521,8 @@ public class Path
                                 
                                 //determine direction of rotation
                                 double incomingOrientation = ac.calcOrientation(doublePrevLat, doublePrevLong, prevLat, prevLon);
-                                System.out.println("incoming: " + incomingOrientation);
                                 // calculate reverse orientation of roundabout edge on route
-                                double roundaboutOrientation = ac.calcOrientation(prevLat, prevLon, latitude, longitude);
-                                System.out.println("taken: " + roundaboutOrientation);
+                                double roundaboutOrientation = ac.calcOrientation(latitude, longitude, prevLat, prevLon);
                                 double deltaRoute = (incomingOrientation - roundaboutOrientation);
                                 if (deltaRoute<0)
                                 {
@@ -535,28 +532,17 @@ public class Path
                                     deltaRoute -= 2*Math.PI;
                                 }
                                 // calculate direction of incoming roundabout edge
-                                try
+                                double roundaboutOrientation2 = getOtherEdgeOrientation(baseNode, adjNode, true);
+                                double deltaRoundabout = (roundaboutOrientation2 - roundaboutOrientation);
+                                if (deltaRoundabout<0)
                                 {
-                                    double roundaboutOrientation2 = getOtherEdgeOrientation(baseNode, adjNode, true);
-                                    System.out.println("other: " + roundaboutOrientation2);
-                                    double deltaRoundabout = (roundaboutOrientation2 - roundaboutOrientation);
-                                    if (deltaRoundabout<0)
-                                    {
-                                        deltaRoundabout = Math.PI-deltaRoundabout;
-                                    };
-                                    if (deltaRoundabout >= 2*Math.PI)
-                                    {
-                                        deltaRoundabout -= 2*Math.PI;
-                                    }
-                                    roundaboutInstruction.setDirOfRotation(deltaRoute < deltaRoundabout);
-                                } catch (IllegalStateException exception)
+                                    deltaRoundabout = Math.PI-deltaRoundabout;
+                                };
+                                if (deltaRoundabout >= 2*Math.PI)
                                 {
-                                    System.out.println("No direction detected");
-                                    System.out.println(prevLat + " " + prevLon);
+                                    deltaRoundabout -= 2*Math.PI;
                                 }
-                                    
-
-
+                                roundaboutInstruction.setDirOfRotation(deltaRoute < deltaRoundabout);
                             } else // first instructions is roundabout instruction
                             {
                                 prevOrientation = ac.calcOrientation(prevLat, prevLon, latitude, longitude);
@@ -567,7 +553,7 @@ public class Path
                             ways.add(prevInstruction);
                         }
 
-                        // Add passed exits to instruction. A node is countet if there is at least one outgoing edge
+                        // Add passed exits to instruction. A node is counted if there is at least one outgoing edge
                         // out of the roundabout
                         EdgeIterator edgeIter = outEdgeExplorer.setBaseNode(adjNode);
                         while (edgeIter.next())
@@ -591,7 +577,7 @@ public class Path
 
                         prevInstruction = ((RoundaboutInstruction) prevInstruction)
                                 .setRadian(deltaInOut)
-                                .setExited();
+                                .setExited(new GHPoint(latitude, longitude));
 
                         prevName = name;
                         prevAnnotation = annotation;

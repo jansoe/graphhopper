@@ -1,5 +1,7 @@
 package com.graphhopper.util;
 
+import com.graphhopper.util.shapes.GHPoint;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +11,8 @@ import java.util.Map;
 public class RoundaboutInstruction extends Instruction
 {
     private int exitNumber = 0;
-    private int clockwise = 0; // 0 undetermined, 1 clockwise, -1 counterclockwise, 2 inconsistent
+    // 0 undetermined, 1 clockwise, -1 counterclockwise, 2 inconsistent
+    private int clockwise = 0;
     private boolean exited = false;
     private double radian = Double.NaN;
 
@@ -46,14 +49,20 @@ public class RoundaboutInstruction extends Instruction
         return this;
     }
 
-    public RoundaboutInstruction setExited()
+    public RoundaboutInstruction setExited(GHPoint point)
     {
         exited = true;
         if (clockwise == -1)
         {
-           System.out.println("counterclockwise rotation detected");
+           System.out.println("counterclockwise rotation detected at " + point);
         }
 
+        return this;
+    }
+
+    public RoundaboutInstruction setExited()
+    {
+        exited = true;
         return this;
     }
 
