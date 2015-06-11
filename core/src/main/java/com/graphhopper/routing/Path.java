@@ -525,7 +525,7 @@ public class Path
                         prevInstruction = ((RoundaboutInstruction) prevInstruction)
                                 .setRadian(deltaInOut)
                                 .setDirOfRotation(deltaOut)
-                                .setExited();
+                                .setExited(latitude, longitude);
 
                         prevName = name;
                         prevAnnotation = annotation;

@@ -49,6 +49,15 @@ public class RoundaboutInstruction extends Instruction
 
     public RoundaboutInstruction setExited()
     {
+
+        exited = true;
+        return this;
+    }
+
+    public RoundaboutInstruction setExited(double lat, double lon)
+    {
+        if (clockwise == -1)
+            System.out.println("Counterclockwise detected at " + lat + "," +lon);
         exited = true;
         return this;
     }
